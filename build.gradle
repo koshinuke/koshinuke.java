@@ -20,6 +20,11 @@ dependencies {
 	}
 	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
 	testCompile 'junit:junit:4.+'
+	testCompile 'com.sun.jersey:jersey-client:1.11'
+	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') {
+		exclude group: 'javax.servlet'
+	}
+	testCompile 'com.sun.jersey.jersey-test-framework:jersey-test-framework-grizzly2:1.11'
 }
 
 sourceSets {

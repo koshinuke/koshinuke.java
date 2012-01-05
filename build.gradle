@@ -1,0 +1,45 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+repositories {
+	mavenCentral()
+	mavenRepo(url: 'http://download.eclipse.org/jgit/maven')
+}
+
+dependencies {
+	compile 'javax.ws.rs:jsr311-api:1.1.1'
+	compile 'com.sun.jersey:jersey-core:1.11'
+	compile 'com.sun.jersey:jersey-server:1.11'
+	compile ('com.sun.jersey:jersey-grizzly2:1.11') {
+		exclude group: 'org.glassfish.gmbal'
+	}
+	compile ('com.sun.jersey:jersey-json:1.11') {
+		exclude group: 'com.sun.xml.bind'
+		exclude group: 'org.codehaus.jettison'
+		exclude module: 'jackson-xc'
+	}
+	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
+	testCompile 'junit:junit:4.+'
+}
+
+sourceSets {
+	main {
+		java.srcDir 'src'
+		resources.srcDir 'src'
+	}
+	test {
+		java.srcDirs 'test'
+		resources.srcDir 'test'
+	}
+}
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+eclipse {
+	classpath {
+		containers = [
+			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6'
+		]
+		defaultOutputDir = file('bin')
+	}
+}

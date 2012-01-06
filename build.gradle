@@ -7,18 +7,19 @@ repositories {
 }
 
 dependencies {
+	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
 	compile 'javax.ws.rs:jsr311-api:1.1.1'
 	compile 'com.sun.jersey:jersey-core:1.11'
 	compile 'com.sun.jersey:jersey-server:1.11'
-	compile ('com.sun.jersey:jersey-grizzly2:1.11') {
-		exclude group: 'org.glassfish.gmbal'
-	}
+	compile 'com.sun.jersey:jersey-servlet:1.11'
 	compile ('com.sun.jersey:jersey-json:1.11') {
 		exclude group: 'com.sun.xml.bind'
 		exclude group: 'org.codehaus.jettison'
 		exclude module: 'jackson-xc'
 	}
-	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
+	compile 'org.eclipse.jetty:jetty-server:8.0.+'
+	compile 'org.eclipse.jetty:jetty-servlet:8.0.+'
+	
 	testCompile 'junit:junit:4.+'
 	testCompile 'com.sun.jersey:jersey-client:1.11'
 	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') {

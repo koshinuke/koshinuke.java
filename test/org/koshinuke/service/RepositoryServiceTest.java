@@ -6,31 +6,33 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke.model.Repository;
+import org.koshinuke.test.JettyTestContainerFactory;
 
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.api.json.JSONConfiguration;
-import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.JerseyTest;
-import com.sun.jersey.test.framework.LowLevelAppDescriptor;
-import com.sun.jersey.test.framework.spi.container.grizzly2.GrizzlyTestContainerFactory;
+import com.sun.jersey.test.framework.spi.container.TestContainerException;
+import com.sun.jersey.test.framework.spi.container.TestContainerFactory;
 
 public class RepositoryServiceTest extends JerseyTest {
 
 	RepositoryService target;
 
 	public RepositoryServiceTest() {
-		super(new GrizzlyTestContainerFactory());
+		super("org.koshinuke.service");
 	}
 
 	@Override
-	protected AppDescriptor configure() {
-		ResourceConfig rc = new ClassNamesResourceConfig(
-				RepositoryService.class);
-		rc.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, true);
-		return new LowLevelAppDescriptor.Builder(rc).build();
+	protected TestContainerFactory getTestContainerFactory()
+			throws TestContainerException {
+		return new JettyTestContainerFactory();
 	}
+
+	// @Override
+	// protected AppDescriptor configure() {
+	// ResourceConfig rc = new ClassNamesResourceConfig(
+	// RepositoryService.class);
+	// return new LowLevelAppDescriptor.Builder(rc).build();
+	// }
 
 	@Before
 	public void setUp() throws Exception {

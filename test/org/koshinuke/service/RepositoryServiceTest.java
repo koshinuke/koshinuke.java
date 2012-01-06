@@ -3,12 +3,19 @@ package org.koshinuke.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.ws.rs.core.Application;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke.model.Repository;
 import org.koshinuke.test.JettyTestContainerFactory;
+import org.koshinuke.test.SimpleAppDescriptor;
 
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.JerseyTest;
 import com.sun.jersey.test.framework.spi.container.TestContainerException;
 import com.sun.jersey.test.framework.spi.container.TestContainerFactory;
@@ -17,8 +24,13 @@ public class RepositoryServiceTest extends JerseyTest {
 
 	RepositoryService target;
 
-	public RepositoryServiceTest() {
-		super("org.koshinuke.service");
+	public static class AP extends Application {
+		@Override
+		public Set<Class<?>> getClasses() {
+			Set<Class<?>> s = new HashSet<Class<?>>();
+			s.add(RepositoryService.class);
+			return s;
+		}
 	}
 
 	@Override
@@ -27,12 +39,10 @@ public class RepositoryServiceTest extends JerseyTest {
 		return new JettyTestContainerFactory();
 	}
 
-	// @Override
-	// protected AppDescriptor configure() {
-	// ResourceConfig rc = new ClassNamesResourceConfig(
-	// RepositoryService.class);
-	// return new LowLevelAppDescriptor.Builder(rc).build();
-	// }
+	@Override
+	protected AppDescriptor configure() {
+		return new SimpleAppDescriptor.Builder(AP.class).build();
+	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -45,7 +55,6 @@ public class RepositoryServiceTest extends JerseyTest {
 		WebResource webResource = resource();
 		String responseMsg = webResource.path("a/b/tree/c").get(String.class);
 		assertNotNull(responseMsg);
-
 	}
 
 	@Test

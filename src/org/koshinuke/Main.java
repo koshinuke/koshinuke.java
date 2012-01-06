@@ -21,10 +21,6 @@ public class Main extends Application {
 		return classes;
 	}
 
-	// private static URI getBaseURI() {
-	// return UriBuilder.fromUri("http://localhost").port(9998).build();
-	// }
-
 	protected static Server start() throws Exception {
 		Server server = new Server(9998);
 		ServletHolder holder = new ServletHolder(ServletContainer.class);

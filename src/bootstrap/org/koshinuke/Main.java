@@ -1,59 +1,51 @@
 package org.koshinuke;
 
-import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.ws.rs.core.Application;
+import java.security.SecureRandom;
 
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.resource.FileResource;
-import org.koshinuke.service.RepositoryService;
+import org.eclipse.jetty.webapp.WebAppContext;
 
-import com.sun.jersey.spi.container.servlet.ServletContainer;
-
-public class Main extends Application {
-
-	@Override
-	public Set<Class<?>> getClasses() {
-		Set<Class<?>> classes = new HashSet<Class<?>>();
-		classes.add(RepositoryService.class);
-		return classes;
-	}
+public class Main {
 
 	protected static Server start() throws Exception {
 		Server server = new Server(9998);
-		ServletHolder holder = new ServletHolder(ServletContainer.class);
-		holder.setInitParameter(ServletContainer.APPLICATION_CONFIG_CLASS,
-				Main.class.getName());
-		holder.setInitParameter(
-				ServletContainer.PROPERTY_WEB_PAGE_CONTENT_REGEX,
-				"/(images|js|css)/.*|.*\\.html");
-		ServletContextHandler sch = new ServletContextHandler(
-				ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
-		sch.addServlet(holder, "/*");
-		setUpResource(sch);
+		ServletContextHandler sch = new WebAppContext("src/webapp", "/");
+		sessionCookieSecured(sch);
 		server.setHandler(sch);
-		// security settings.
-		SecurityHandler secure = setUpSecurityHandler(sch);
+		SecurityHandler secure = securitySettings(sch);
 		server.start();
 		secure.start();
 		return server;
 	}
 
-	private static void setUpResource(ServletContextHandler handler)
-			throws Exception {
-		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		URL url = cl.getResource("META-INF/resources");
-		handler.setBaseResource(new FileResource(url));
+	protected static void sessionCookieSecured(ServletContextHandler sch) {
+		String s = newSessionKey();
+		sch.setInitParameter(SessionManager.__SessionCookieProperty, s);
+		sch.setInitParameter(
+				SessionManager.__SessionIdPathParameterNameProperty, s);
+		AbstractSessionManager asm = (AbstractSessionManager) sch
+				.getSessionHandler().getSessionManager();
+		asm.setHttpOnly(true);
 	}
 
-	private static SecurityHandler setUpSecurityHandler(
-			ServletContextHandler sch) throws Exception {
+	protected static String newSessionKey() {
+		SecureRandom random = new SecureRandom(SecureRandom.getSeed(512));
+		StringBuilder stb = new StringBuilder(8);
+		int range = 122 - 62;
+		for (int i = 0; i < 8; i++) {
+			int v = random.nextInt(range) + 62;
+			stb.append((char) v);
+		}
+		return stb.toString();
+	}
+
+	protected static SecurityHandler securitySettings(ServletContextHandler sch)
+			throws Exception {
 		System.setProperty("java.security.auth.login.config", "etc/jaas.conf");
 		SecurityHandler secure = sch.getSecurityHandler();
 		secure.setAuthMethod("FORM");

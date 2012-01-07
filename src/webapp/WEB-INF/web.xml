@@ -7,11 +7,11 @@
 		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
 		<init-param>
 			<param-name>javax.ws.rs.Application</param-name>
-			<param-value>org.koshinuke.filter.App</param-value>
+			<param-value>org.koshinuke.App</param-value>
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
-			<param-value>/(images|js|css)/.*|.*\.html</param-value>
+			<param-value>/(images|js|css)/.*</param-value>
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
@@ -19,7 +19,4 @@
 		<servlet-name>Jeresy</servlet-name>
 		<url-pattern>/*</url-pattern>
 	</servlet-mapping>
-	<welcome-file-list>
-		<welcome-file>login.html</welcome-file>
-	</welcome-file-list>
 </web-app>

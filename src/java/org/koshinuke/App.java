@@ -1,4 +1,4 @@
-package org.koshinuke.filter;
+package org.koshinuke;
 
 import java.util.HashSet;
 import java.util.Set;

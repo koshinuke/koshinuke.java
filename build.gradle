@@ -20,8 +20,6 @@ dependencies {
 	testCompile 'org.eclipse.jetty:jetty-servlet:8.0.+'
 	testCompile ('org.eclipse.jetty:jetty-plus:8.0.+') {
 		exclude module: 'geronimo-jta_1.1_spec'
-		//exclude module: 'jetty-xml'
-		//exclude module: 'jetty-webapp'
 		exclude module: 'jetty-jndi'
 	}
 
@@ -34,7 +32,6 @@ sourceSets {
 	main {
 		java.srcDir 'src/java'
 		resources.srcDir 'src/java'
-		//webapp.srcDir 'src/webapp'
 	}
 	bootstrap {
 		java.srcDir "src/bootstrap"

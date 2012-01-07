@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'war'
 
 repositories {
 	mavenCentral()
@@ -8,39 +9,67 @@ repositories {
 
 dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
-	compile 'javax.ws.rs:jsr311-api:1.1.1'
 	compile 'com.sun.jersey:jersey-core:1.11'
 	compile 'com.sun.jersey:jersey-server:1.11'
 	compile 'com.sun.jersey:jersey-servlet:1.11'
-	compile 'org.eclipse.jetty:jetty-server:8.0.+'
-	compile 'org.eclipse.jetty:jetty-servlet:8.0.+'
 	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
-	
+	compile 'org.eclipse.jetty:jetty-util:8.0.+'
+	providedCompile 'org.mortbay.jetty:servlet-api:3.0+'
+
+	testCompile 'org.eclipse.jetty:jetty-server:8.0.+'
+	testCompile 'org.eclipse.jetty:jetty-servlet:8.0.+'
+	testCompile ('org.eclipse.jetty:jetty-plus:8.0.+') {
+		exclude module: 'geronimo-jta_1.1_spec'
+		//exclude module: 'jetty-xml'
+		//exclude module: 'jetty-webapp'
+		exclude module: 'jetty-jndi'
+	}
+
 	testCompile 'junit:junit:4.+'
 	testCompile 'com.sun.jersey:jersey-client:1.11'
-	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') {
-		exclude group: 'javax.servlet'
-	}
+	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') { exclude group: 'javax.servlet' }
 }
 
 sourceSets {
 	main {
-		java.srcDir 'src'
-		resources.srcDir 'src'
+		java.srcDir 'src/java'
+		resources.srcDir 'src/java'
+		//webapp.srcDir 'src/webapp'
+	}
+	bootstrap {
+		java.srcDir "src/bootstrap"
 	}
 	test {
-		java.srcDirs 'test'
-		resources.srcDir 'test'
+		java.srcDirs 'src/test'
+		resources.srcDir 'src/test'
 	}
+	
 }
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
+webAppDirName = "src/webapp"
 
 eclipse {
+	project {
+		name = 'koshinuke.java'
+	}
 	classpath {
 		containers = [
 			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6'
 		]
 		defaultOutputDir = file('bin')
+	}
+}
+
+buildscript {
+	repositories { mavenCentral() }
+	dependencies { classpath 'org.eclipse.jetty:jetty-http:8.0.+' }
+}
+
+task passwd {
+	description = "login.properties Utility."
+	doLast {
+		println "taichi: " + org.eclipse.jetty.http.security.Credential.MD5.digest("taichipass")
+		println "lanius: " + org.eclipse.jetty.http.security.Credential.Crypt.crypt("lanius", "laniuspass")
 	}
 }

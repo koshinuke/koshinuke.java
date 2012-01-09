@@ -33,28 +33,28 @@ sourceSets {
 		java.srcDir 'src/java'
 		resources.srcDir 'src/java'
 	}
-	bootstrap {
-		java.srcDir "src/bootstrap"
-	}
+	bootstrap { java.srcDir "src/bootstrap" }
 	test {
 		java.srcDirs 'src/test'
 		resources.srcDir 'src/test'
 	}
-	
 }
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 webAppDirName = "src/webapp"
 
 eclipse {
-	project {
-		name = 'koshinuke.java'
-	}
+	project { name = 'koshinuke.java' }
 	classpath {
 		containers = [
 			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6'
 		]
 		defaultOutputDir = file('bin')
+		file {
+			whenMerged {
+				it.entries.find { it.path == 'src/java'}?.output = 'src/webapp/WEB-INF/classes'
+			}
+		}
 	}
 }
 

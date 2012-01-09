@@ -8,7 +8,6 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -16,7 +15,6 @@ import javax.servlet.http.HttpSession;
 /**
  * @author taichi
  */
-@WebFilter(urlPatterns = "/*")
 public class AuthenticationFilter implements Filter {
 
 	public static final String AUTH = AuthenticationFilter.class.getName()
@@ -31,15 +29,10 @@ public class AuthenticationFilter implements Filter {
 			FilterChain chain) throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
-
-		System.out.println(request.getContextPath());
-		System.out.println(request.getRequestURI());
-
-		if (request.getContextPath().equals(request.getRequestURI())
-				|| isLoggedIn(request)) {
+		if ("/login".equals(request.getRequestURI()) || isLoggedIn(request)) {
 			chain.doFilter(request, response);
 		} else {
-			response.sendRedirect("/");
+			response.sendRedirect("/login");
 		}
 	}
 

@@ -33,13 +33,19 @@ public class Main {
 		asm.setHttpOnly(true);
 	}
 
+	static final char[] CANDIDATE = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+			'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+			'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+			'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
+			'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9' };
+
 	protected static String newSessionKey() {
 		SecureRandom random = new SecureRandom(SecureRandom.getSeed(512));
 		StringBuilder stb = new StringBuilder(8);
-		int range = 122 - 62;
+		int range = CANDIDATE.length - 1;
 		for (int i = 0; i < 8; i++) {
-			int v = random.nextInt(range) + 62;
-			stb.append((char) v);
+			stb.append(CANDIDATE[random.nextInt(range)]);
 		}
 		return stb.toString();
 	}

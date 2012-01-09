@@ -11,12 +11,30 @@
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
-			<param-value>/(images|js|css)/.*</param-value>
+			<param-value>/[sS][tT][aA][tT][iI][cC]/.*</param-value>
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
+	<filter>
+		<filter-name>auth</filter-name>
+		<filter-class>org.koshinuke.filter.AuthenticationFilter</filter-class>
+	</filter>
+	<filter>
+		<filter-name>enc</filter-name>
+		<filter-class>org.koshinuke.filter.EncodingFilter</filter-class>
+	</filter>
 	<servlet-mapping>
 		<servlet-name>Jeresy</servlet-name>
 		<url-pattern>/*</url-pattern>
 	</servlet-mapping>
+	<filter-mapping>
+		<filter-name>auth</filter-name>
+		<url-pattern>/dynamic/*</url-pattern>
+		<url-pattern>/login</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>enc</filter-name>
+		<url-pattern>/dynamic/*</url-pattern>
+		<url-pattern>/login</url-pattern>
+	</filter-mapping>
 </web-app>

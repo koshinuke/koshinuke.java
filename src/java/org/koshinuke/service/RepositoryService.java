@@ -1,16 +1,11 @@
 package org.koshinuke.service;
 
-import java.security.Principal;
 import java.util.List;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -19,57 +14,41 @@ import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.model.Repository;
+import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.resource.Singleton;
 
-@Singleton
 @Path("")
+@Singleton
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
-	public Viewable index(@Context HttpServletRequest req) {
-		if (AuthenticationFilter.isLoggedIn(req)) {
-			return new Viewable("/repo");
+	public Viewable index(@Context HttpServletRequest request,
+			@Context HttpServletResponse res) {
+		if (AuthenticationFilter.isLoggedIn(request) == false) {
+			ServletUtil.redirect(res, "/login");
+			return null;
 		}
-		return new Viewable("/login");
-	}
-
-	@POST
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Produces(MediaType.TEXT_HTML)
-	public Viewable login(@Context HttpServletRequest req,
-			@FormParam("u") String u, @FormParam("p") String p) {
-		try {
-			req.login(u, p);
-			HttpSession session = req.getSession(false);
-			if (session != null) {
-				session.invalidate();
-			}
-			session = req.getSession(true);
-			Principal principal = req.getUserPrincipal();
-			session.setAttribute(AuthenticationFilter.AUTH, principal);
-		} catch (ServletException e) {
-			// login failed
-		}
-		return index(req);
+		return new Viewable("/repo");
 	}
 
 	@GET
 	@HeaderParam("X-Requested-With")
+	@Path("/dynamic")
 	public List<Repository> repolist() {
 		return null;
 	}
 
 	@GET
-	@Path("/{path}/{project}")
+	@Path("/dynamic/{project}/{repository}")
 	@HeaderParam("X-Requested-With")
-	public Repository name(@PathParam("path") String path,
-			@PathParam("project") String project) {
+	public Repository name(@PathParam("project") String project,
+			@PathParam("repository") String repository) {
 		Repository r = new Repository();
-		r.path = path;
+		r.path = repository;
 		r.name = project;
 		r.branches.add("master");
 		r.branches.add("dev");
@@ -77,12 +56,12 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Path("/{path}/{project}/tree/{branch}")
+	@Path("/dynamic/{project}/{repository}/tree/{branch}")
 	@HeaderParam("X-Requested-With")
-	public String tree(@PathParam("path") String path,
-			@PathParam("project") String project,
+	public String tree(@PathParam("project") String project,
+			@PathParam("repository") String repository,
 			@PathParam("branch") String branch) {
 
-		return path + "--" + project + "--" + branch;
+		return project + "--" + repository + "--" + branch;
 	}
 }

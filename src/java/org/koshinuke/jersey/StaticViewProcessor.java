@@ -1,56 +1,75 @@
 package org.koshinuke.jersey;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
+import java.io.OutputStreamWriter;
+import java.net.URL;
+import java.util.Map;
+import java.util.Set;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.ext.Provider;
 
-import org.koshinuke.util.Streams;
-
+import com.google.common.collect.Maps;
+import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.parseinfo.SoyFileInfo;
+import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.tofu.SoyTofu;
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.template.ViewProcessor;
 
 /**
  * @author taichi
  */
+@Provider
 public class StaticViewProcessor implements ViewProcessor<String> {
-
-	@Context
-	ServletContext servletContext;
 
 	@Context
 	ThreadLocal<HttpServletResponse> responseInvoker;
 
+	Map<String, SoyTemplateInfo> templates = Maps.newHashMap();
+
+	SoyTofu tofu;
+
+	@Inject
+	public StaticViewProcessor(ServletContext sc, Set<SoyFileInfo> list)
+			throws IOException {
+		SoyFileSet.Builder b = new SoyFileSet.Builder();
+		for (SoyFileInfo f : list) {
+			String path = "/WEB-INF/soy/" + f.getFileName();
+			URL url = sc.getResource(path);
+			b.add(url);
+			for (SoyTemplateInfo t : f.getTemplates()) {
+				this.templates.put("/" + t.getName(), t);
+			}
+		}
+		this.tofu = b.build().compileToTofu();
+	}
+
 	@Override
 	public String resolve(String name) {
-		String path = "/WEB-INF/static/" + name + ".html";
-		try {
-			if (this.servletContext.getResource(path) != null) {
-				return path;
-			}
-		} catch (MalformedURLException e) {
+		SoyTemplateInfo t = this.templates.get(name);
+		if (t != null) {
+			return name;
 		}
 		return null;
 	}
 
 	@Override
-	public void writeTo(String t, Viewable viewable, OutputStream out)
+	public void writeTo(String name, Viewable viewable, OutputStream out)
 			throws IOException {
-		InputStream in = null;
-		try {
-			HttpServletResponse response = responseInvoker.get();
-			response.setHeader(HttpHeaders.CACHE_CONTROL, "No-cache");
-			response.setDateHeader(HttpHeaders.EXPIRES, 1);
-			in = this.servletContext.getResourceAsStream(t);
-			Streams.copy(in, out);
-			out.flush();
-		} finally {
-			Streams.close(in);
-		}
+		HttpServletResponse response = responseInvoker.get();
+		response.setHeader(HttpHeaders.CACHE_CONTROL, "No-cache");
+		response.setDateHeader(HttpHeaders.EXPIRES, 1);
+		SoyTemplateInfo t = this.templates.get(name);
+		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out,
+				"UTF-8"));
+		this.tofu.newRenderer(t).render(bw);
+		bw.flush();
 	}
 }

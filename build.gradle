@@ -5,15 +5,23 @@ apply plugin: 'war'
 repositories {
 	mavenCentral()
 	mavenRepo(url: 'http://download.eclipse.org/jgit/maven')
+	flatDir { dirs 'lib' }
 }
 
 dependencies {
-	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.0.201112221803-r'
+	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 	compile 'com.sun.jersey:jersey-core:1.11'
 	compile 'com.sun.jersey:jersey-server:1.11'
 	compile 'com.sun.jersey:jersey-servlet:1.11'
 	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
-	compile 'org.eclipse.jetty:jetty-util:8.0.+'
+	compile 'com.sun.jersey.contribs:jersey-guice:1.11'
+	compile 'com.google.guava:guava:11.+'
+	compile 'com.google.inject:guice:3.0'
+	compile 'com.google.inject.extensions:guice-multibindings:3.0'
+	compile 'com.google.inject.extensions:guice-assistedinject:3.0'
+	compile 'com.ibm.icu:icu4j:4.8.1.1'
+	compile 'com.google:soy:latest'
+
 	providedCompile 'org.mortbay.jetty:servlet-api:3.0+'
 
 	testCompile 'org.eclipse.jetty:jetty-server:8.0.+'
@@ -59,8 +67,44 @@ eclipse {
 }
 
 buildscript {
-	repositories { mavenCentral() }
-	dependencies { classpath 'org.eclipse.jetty:jetty-http:8.0.+' }
+	repositories {
+		mavenCentral()
+		mavenRepo(url: 'http://maven.jenkins-ci.org:8081/content/repositories/releases/')
+		flatDir { dirs 'lib' }
+	}
+	dependencies {
+		classpath 'args4j:args4j:2.0.+'
+		classpath 'rhino:js:1.7R2'
+		classpath 'org.objenesis:objenesis:1.2'
+		classpath 'com.google.guava:guava:11.+'
+		classpath 'com.google.inject:guice:3.0'
+		classpath 'com.google.inject.extensions:guice-multibindings:3.0'
+		classpath 'com.google.inject.extensions:guice-assistedinject:3.0'
+		classpath 'com.ibm.icu:icu4j:4.8.1.1'
+		classpath 'com.google:soy:latest'
+		classpath 'org.eclipse.jetty:jetty-http:8.0.+'
+	}
+}
+
+task soy {
+	description = 'Generate SoyParseInfo'
+	doLast {
+		def args = [
+			"--outputDirectory",
+			"src/java/org/koshinuke/soy/",
+			"--javaPackage",
+			"org.koshinuke.soy",
+			"--javaClassNameSource",
+			"filename"
+		]
+		args += files {
+			file("src/webapp/WEB-INF/soy/").listFiles()
+		}.filter {
+			it.name.endsWith(".soy")
+		}.collect { it.absolutePath }
+
+		com.google.template.soy.SoyParseInfoGenerator.main(args as String[])
+	}
 }
 
 task passwd {

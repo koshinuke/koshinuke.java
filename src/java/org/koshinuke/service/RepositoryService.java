@@ -14,13 +14,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.model.Repository;
+import org.koshinuke.soy.RepoSoyInfo;
+import org.koshinuke.soy.SoyTemplatesModule;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.spi.resource.Singleton;
 
 @Path("")
-@Singleton
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
 
@@ -32,7 +32,7 @@ public class RepositoryService {
 			ServletUtil.redirect(res, "/login");
 			return null;
 		}
-		return new Viewable("/repo");
+		return SoyTemplatesModule.of(RepoSoyInfo.HOME);
 	}
 
 	@GET
@@ -44,7 +44,7 @@ public class RepositoryService {
 
 	@GET
 	@Path("/dynamic/{project}/{repository}")
-	@HeaderParam("X-Requested-With")
+	// @HeaderParam("X-Requested-With")
 	public Repository name(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		Repository r = new Repository();

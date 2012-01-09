@@ -1,23 +1,40 @@
 package org.koshinuke;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import org.koshinuke.jersey.StaticViewProcessor;
+import org.koshinuke.service.ServiceModule;
+import org.koshinuke.soy.SoyTemplatesModule;
 
-import javax.ws.rs.core.Application;
-
-import org.koshinuke.service.LoginService;
-import org.koshinuke.service.RepositoryService;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Singleton;
+import com.google.inject.servlet.GuiceServletContextListener;
+import com.sun.jersey.guice.JerseyServletModule;
+import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 /**
  * @author taichi
  */
-public class App extends Application {
+public class App extends GuiceServletContextListener {
 
 	@Override
-	public Set<Class<?>> getClasses() {
-		Set<Class<?>> classes = new HashSet<Class<?>>();
-		classes.add(LoginService.class);
-		classes.add(RepositoryService.class);
-		return classes;
+	protected Injector getInjector() {
+		return Guice.createInjector(new JerseyServletModule() {
+			@Override
+			protected void configureServlets() {
+				install(new ServiceModule());
+				install(new SoyTemplatesModule());
+				bind(JacksonJsonProvider.class).in(Singleton.class);
+				bind(JacksonJsonProvider.class).in(Singleton.class);
+				bind(StaticViewProcessor.class).in(Singleton.class);
+				serve("/*")
+						.with(GuiceContainer.class,
+								ImmutableMap
+										.of(ServletContainer.PROPERTY_WEB_PAGE_CONTENT_REGEX,
+												"/[sS][tT][aA][tT][iI][cC]/.*"));
+			}
+		});
 	}
 }

@@ -17,6 +17,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
+import org.koshinuke.soy.LoginSoyInfo;
+import org.koshinuke.soy.SoyTemplatesModule;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
@@ -34,7 +36,7 @@ public class LoginService {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return new Viewable("/login");
+		return SoyTemplatesModule.of(LoginSoyInfo.LOGINFORM);
 	}
 
 	static class Redirect extends ResponseImpl {
@@ -75,6 +77,6 @@ public class LoginService {
 		} catch (ServletException e) {
 			// login failed
 		}
-		return new Viewable("/login");
+		return SoyTemplatesModule.of(LoginSoyInfo.LOGINFORM);
 	}
 }

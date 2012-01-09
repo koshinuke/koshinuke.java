@@ -27,7 +27,7 @@ import com.sun.jersey.spi.template.ViewProcessor;
  * @author taichi
  */
 @Provider
-public class StaticViewProcessor implements ViewProcessor<String> {
+public class SoyViewProcessor implements ViewProcessor<String> {
 
 	@Context
 	ThreadLocal<HttpServletResponse> responseInvoker;
@@ -37,7 +37,7 @@ public class StaticViewProcessor implements ViewProcessor<String> {
 	SoyTofu tofu;
 
 	@Inject
-	public StaticViewProcessor(ServletContext sc, Set<SoyFileInfo> list)
+	public SoyViewProcessor(ServletContext sc, Set<SoyFileInfo> list)
 			throws IOException {
 		SoyFileSet.Builder b = new SoyFileSet.Builder();
 		for (SoyFileInfo f : list) {

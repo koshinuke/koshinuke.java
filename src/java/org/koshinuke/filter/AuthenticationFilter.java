@@ -2,6 +2,7 @@ package org.koshinuke.filter;
 
 import java.io.IOException;
 
+import javax.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -15,6 +16,7 @@ import javax.servlet.http.HttpSession;
 /**
  * @author taichi
  */
+@Singleton
 public class AuthenticationFilter implements Filter {
 
 	public static final String AUTH = AuthenticationFilter.class.getName()

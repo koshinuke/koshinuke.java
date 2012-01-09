@@ -2,6 +2,7 @@ package org.koshinuke.filter;
 
 import java.io.IOException;
 
+import javax.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -12,6 +13,7 @@ import javax.servlet.ServletResponse;
 /**
  * @author taichi
  */
+@Singleton
 public class EncodingFilter implements Filter {
 
 	@Override

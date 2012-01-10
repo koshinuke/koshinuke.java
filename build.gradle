@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
+	compile 'net.iharder:base64:2.3.8'
 	compile 'com.sun.jersey:jersey-core:1.11'
 	compile 'com.sun.jersey:jersey-server:1.11'
 	compile 'com.sun.jersey:jersey-servlet:1.11'

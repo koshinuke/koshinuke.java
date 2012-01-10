@@ -20,22 +20,36 @@ public class LoginSoyInfo extends SoyFileInfo {
   public static class Param {
     private Param() {}
 
+    /** Listed by .loginform. */
+    public static final String CSRF = "csrf";
   }
 
 
   /**
    * login form
    */
-  public static final SoyTemplateInfo LOGINFORM = new SoyTemplateInfo(
-      "org.koshinuke.login.loginform",
-      ImmutableMap.<String, ParamRequisiteness>of(),
-      ImmutableSortedSet.<String>of());
+  public static final LoginformSoyTemplateInfo LOGINFORM =
+      new LoginformSoyTemplateInfo();
+
+  public static class LoginformSoyTemplateInfo extends SoyTemplateInfo {
+    private LoginformSoyTemplateInfo() {
+      super("org.koshinuke.login.loginform",
+            ImmutableMap.<String, ParamRequisiteness>builder()
+                .put("csrf", ParamRequisiteness.REQUIRED)
+                .build(),
+            ImmutableSortedSet.<String>of());
+    }
+
+    /**  */
+    public final String CSRF = "csrf";
+  }
 
 
   private LoginSoyInfo() {
     super("login.soy",
           "org.koshinuke.login",
-          ImmutableSortedSet.<String>of(),
+          ImmutableSortedSet.<String>of(
+              Param.CSRF),
           ImmutableList.<SoyTemplateInfo>of(
               LOGINFORM),
           ImmutableMap.<String, CssTagsPrefixPresence>of());

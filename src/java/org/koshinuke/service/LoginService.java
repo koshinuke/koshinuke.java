@@ -21,6 +21,7 @@ import org.koshinuke.soy.LoginSoyInfo;
 import org.koshinuke.soy.SoyTemplatesModule;
 import org.koshinuke.util.ServletUtil;
 
+import com.google.template.soy.data.SoyMapData;
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.core.header.OutBoundHeaders;
 import com.sun.jersey.core.spi.factory.ResponseImpl;
@@ -36,7 +37,10 @@ public class LoginService {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return SoyTemplatesModule.of(LoginSoyInfo.LOGINFORM);
+		return SoyTemplatesModule.of(
+				LoginSoyInfo.LOGINFORM,
+				new SoyMapData(LoginSoyInfo.Param.CSRF, ServletUtil
+						.setToken(req.getSession(true))));
 	}
 
 	static class Redirect extends ResponseImpl {
@@ -56,24 +60,26 @@ public class LoginService {
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Object login(@Context HttpServletRequest req,
 			@Context HttpServletResponse res, @FormParam("u") String u,
-			@FormParam("p") String p) {
+			@FormParam("p") String p, @FormParam("t") String t) {
 		try {
-			req.login(u, p);
 			HttpSession session = req.getSession(false);
-			if (session != null) {
-				session.invalidate();
+			if (ServletUtil.verifyCsrf(session, t)) {
+				req.login(u, p);
+				if (session != null) {
+					session.invalidate();
+				}
+				session = req.getSession(true);
+				Principal principal = req.getUserPrincipal();
+				session.setAttribute(AuthenticationFilter.AUTH, principal);
+				// HttpServletResponse#sendRedirectを使い、
+				// リダイレクト先としてコンテキストルートを指定すると、
+				// このリクエストを送信する際にはまだHttpSessionが存在しない為に、
+				// URLのセッションIDと/が隣合う不適切なLocationヘッダが生成されてしまうので、回避措置。
+				// 尚、Set-Cookieヘッダーは正しく設定されるので、アプリケーションとしては適切に動作する。
+				// see. org.eclipse.jetty.server.Response#encodeURL
+				StringBuffer stb = req.getRequestURL();
+				return new Redirect(stb.substring(0, stb.indexOf("login") - 1));
 			}
-			session = req.getSession(true);
-			Principal principal = req.getUserPrincipal();
-			session.setAttribute(AuthenticationFilter.AUTH, principal);
-			// HttpServletResponse#sendRedirectを使い、
-			// リダイレクト先としてコンテキストルートを指定すると、
-			// このリクエストを送信する際にはまだHttpSessionが存在しない為に、
-			// URLのセッションIDと/が隣合う不適切なLocationヘッダが生成されてしまうので、回避措置。
-			// 尚、Set-Cookieヘッダーは正しく設定されるので、アプリケーションとしては適切に動作する。
-			// see. org.eclipse.jetty.server.Response#encodeURL
-			StringBuffer stb = req.getRequestURL();
-			return new Redirect(stb.substring(0, stb.indexOf("login") - 1));
 		} catch (ServletException e) {
 			// login failed
 		}

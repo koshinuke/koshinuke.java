@@ -2,6 +2,7 @@ package org.koshinuke.soy;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
+import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.sun.jersey.api.view.Viewable;
@@ -20,6 +21,10 @@ public class SoyTemplatesModule extends AbstractModule {
 	}
 
 	public static Viewable of(SoyTemplateInfo t) {
-		return new Viewable("/" + t.getName());
+		return of(t, null);
+	}
+
+	public static Viewable of(SoyTemplateInfo t, SoyMapData model) {
+		return new Viewable("/" + t.getName(), model);
 	}
 }

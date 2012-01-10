@@ -17,6 +17,7 @@ import javax.ws.rs.ext.Provider;
 
 import com.google.common.collect.Maps;
 import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.tofu.SoyTofu;
@@ -66,10 +67,11 @@ public class SoyViewProcessor implements ViewProcessor<String> {
 		HttpServletResponse response = responseInvoker.get();
 		response.setHeader(HttpHeaders.CACHE_CONTROL, "No-cache");
 		response.setDateHeader(HttpHeaders.EXPIRES, 1);
+		SoyMapData sd = (SoyMapData) viewable.getModel();
 		SoyTemplateInfo t = this.templates.get(name);
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out,
 				"UTF-8"));
-		this.tofu.newRenderer(t).render(bw);
+		this.tofu.newRenderer(t).setData(sd).render(bw);
 		bw.flush();
 	}
 }

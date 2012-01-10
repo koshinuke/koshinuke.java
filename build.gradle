@@ -11,15 +11,22 @@ repositories {
 dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 	compile 'net.iharder:base64:2.3.8'
-	compile 'com.sun.jersey:jersey-core:1.11'
-	compile 'com.sun.jersey:jersey-server:1.11'
-	compile 'com.sun.jersey:jersey-servlet:1.11'
+	[
+		':jersey-core',
+		':jersey-server',
+		':jersey-servlet',
+		'.contribs:jersey-guice'
+	].each { compile "com.sun.jersey" + it + ":1.11" }
+
 	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
-	compile 'com.sun.jersey.contribs:jersey-guice:1.11'
 	compile 'com.google.guava:guava:11.+'
-	compile 'com.google.inject:guice:3.0'
-	compile 'com.google.inject.extensions:guice-multibindings:3.0'
-	compile 'com.google.inject.extensions:guice-assistedinject:3.0'
+
+	[
+		':guice',
+		'.extensions:guice-multibindings',
+		'.extensions:guice-assistedinject'
+	].each { compile 'com.google.inject' + it + ":3.0"}
+
 	compile 'com.ibm.icu:icu4j:4.8.1.1'
 	compile 'com.google:soy:latest'
 
@@ -81,9 +88,13 @@ buildscript {
 		classpath 'rhino:js:1.7R2'
 		classpath 'org.objenesis:objenesis:1.2'
 		classpath 'com.google.guava:guava:11.+'
-		classpath 'com.google.inject:guice:3.0'
-		classpath 'com.google.inject.extensions:guice-multibindings:3.0'
-		classpath 'com.google.inject.extensions:guice-assistedinject:3.0'
+
+		[
+			':guice',
+			'.extensions:guice-multibindings',
+			'.extensions:guice-assistedinject'
+		].each { classpath 'com.google.inject' + it + ":3.0"}
+		
 		classpath 'com.ibm.icu:icu4j:4.8.1.1'
 		classpath 'com.google:soy:latest'
 		classpath 'org.eclipse.jetty:jetty-http:8.0.+'

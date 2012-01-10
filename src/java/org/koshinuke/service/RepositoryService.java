@@ -48,8 +48,8 @@ public class RepositoryService {
 	public Repository name(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		Repository r = new Repository();
-		r.path = repository;
-		r.name = project;
+		r.path = project;
+		r.name = repository;
 		r.branches.add("master");
 		r.branches.add("dev");
 		return r;

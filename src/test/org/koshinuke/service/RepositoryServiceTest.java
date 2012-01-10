@@ -53,7 +53,8 @@ public class RepositoryServiceTest extends JerseyTest {
 	@Test
 	public void testService() throws Exception {
 		WebResource webResource = resource();
-		String responseMsg = webResource.path("a/b/tree/c").get(String.class);
+		String responseMsg = webResource.path("dynamic/a/b/tree/c")
+				.header("X-Requested-With", "XMLHttpRequest").get(String.class);
 		assertNotNull(responseMsg);
 	}
 

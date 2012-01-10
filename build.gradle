@@ -48,11 +48,11 @@ sourceSets {
 	}
 }
 
-compileJava.options.encoding = "UTF-8"
-
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 webAppDirName = "src/webapp"
+
+tasks.withType(AbstractCompile).each { it.options.encoding = "UTF-8" }
 
 eclipse {
 	project { name = 'koshinuke.java' }

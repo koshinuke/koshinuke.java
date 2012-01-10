@@ -1,6 +1,5 @@
 package org.koshinuke;
 
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.filter.EncodingFilter;
 import org.koshinuke.jersey.SoyViewProcessor;
@@ -28,8 +27,6 @@ public class App extends GuiceServletContextListener {
 			protected void configureServlets() {
 				install(new ServiceModule());
 				install(new SoyTemplatesModule());
-				bind(JacksonJsonProvider.class).in(Singleton.class);
-				bind(JacksonJsonProvider.class).in(Singleton.class);
 				bind(SoyViewProcessor.class).in(Singleton.class);
 				serve("/*")
 						.with(GuiceContainer.class,

@@ -4,6 +4,9 @@ import javax.ws.rs.core.Application;
 
 import com.sun.jersey.test.framework.AppDescriptor;
 
+/**
+ * @author taichi
+ */
 public class SimpleAppDescriptor extends AppDescriptor {
 
 	public static class Builder extends

@@ -17,11 +17,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.soy.LoginSoyInfo;
-import org.koshinuke.soy.SoyTemplatesModule;
+import org.koshinuke.model.Csrf;
 import org.koshinuke.util.ServletUtil;
 
-import com.google.template.soy.data.SoyMapData;
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.core.header.OutBoundHeaders;
 import com.sun.jersey.core.spi.factory.ResponseImpl;
@@ -37,10 +35,7 @@ public class LoginService {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return SoyTemplatesModule.of(
-				LoginSoyInfo.LOGINFORM,
-				new SoyMapData(LoginSoyInfo.Param.CSRF, ServletUtil
-						.setToken(req.getSession(true))));
+		return Csrf.of("/login", req.getSession(true));
 	}
 
 	static class Redirect extends ResponseImpl {
@@ -83,6 +78,6 @@ public class LoginService {
 		} catch (ServletException e) {
 			// login failed
 		}
-		return SoyTemplatesModule.of(LoginSoyInfo.LOGINFORM);
+		return Csrf.of("/login", req.getSession(true));
 	}
 }

@@ -12,8 +12,6 @@ import org.eclipse.jgit.util.StringUtils;
  */
 public class ServletUtil {
 
-	public static final String CSRFTOKEN = "csrfToken";
-
 	public static void redirect(HttpServletResponse res, String path) {
 		try {
 			res.sendRedirect(path);
@@ -22,21 +20,11 @@ public class ServletUtil {
 		}
 	}
 
-	public static Object setToken(HttpSession session) {
-		Object o = session.getAttribute(CSRFTOKEN);
-		if (o == null) {
-			o = RandomUtil.nextString(20);
-			session.setAttribute(CSRFTOKEN, o);
-		}
-		return o;
-	}
-
 	public static boolean verifyCsrf(HttpSession session, String client) {
 		if (session == null) {
 			return false;
 		}
-		String server = (String) session.getAttribute(CSRFTOKEN);
-		return StringUtils.isEmptyOrNull(server) == false
-				&& server.equals(client);
+		return StringUtils.isEmptyOrNull(client) == false
+				&& client.equals(session.getId());
 	}
 }

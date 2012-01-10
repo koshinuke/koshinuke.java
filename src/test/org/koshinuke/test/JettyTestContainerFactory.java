@@ -13,6 +13,9 @@ import com.sun.jersey.test.framework.spi.container.TestContainer;
 import com.sun.jersey.test.framework.spi.container.TestContainerException;
 import com.sun.jersey.test.framework.spi.container.TestContainerFactory;
 
+/**
+ * @author taichi
+ */
 public class JettyTestContainerFactory implements TestContainerFactory {
 
 	@Override
@@ -40,6 +43,7 @@ public class JettyTestContainerFactory implements TestContainerFactory {
 			holder.setInitParameter(ServletContainer.APPLICATION_CONFIG_CLASS,
 					ad.getApplicationClass().getName());
 			ServletContextHandler sch = new ServletContextHandler();
+			sch.setResourceBase("src/webapp");
 			sch.addServlet(holder, "/*");
 			this.server = new Server(this.baseUri.getPort());
 			this.server.setHandler(sch);

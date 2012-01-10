@@ -2,15 +2,39 @@
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
 	version="3.0">
 	<display-name>KoshiNuke</display-name>
-	<listener>
-		<listener-class>org.koshinuke.App</listener-class>
-	</listener>
+	<servlet>
+		<servlet-name>Jeresy</servlet-name>
+		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>javax.ws.rs.Application</param-name>
+			<param-value>org.koshinuke.App</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
+			<param-value>/[sS][tT][aA][tT][iI][cC]/.*</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
 	<filter>
-		<filter-name>guice</filter-name>
-		<filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+		<filter-name>auth</filter-name>
+		<filter-class>org.koshinuke.filter.AuthenticationFilter</filter-class>
 	</filter>
-	<filter-mapping>
-		<filter-name>guice</filter-name>
+	<filter>
+		<filter-name>enc</filter-name>
+		<filter-class>org.koshinuke.filter.EncodingFilter</filter-class>
+	</filter>
+	<servlet-mapping>
+		<servlet-name>Jeresy</servlet-name>
 		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+	<filter-mapping>
+		<filter-name>auth</filter-name>
+		<url-pattern>/dynamic/*</url-pattern>
+		<url-pattern>/login</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>enc</filter-name>
+		<url-pattern>/dynamic/*</url-pattern>
+		<url-pattern>/login</url-pattern>
 	</filter-mapping>
 </web-app>

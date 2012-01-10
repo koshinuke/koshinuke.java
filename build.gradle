@@ -12,23 +12,14 @@ dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 	compile 'net.iharder:base64:2.3.8'
 	[
-		':jersey-core',
-		':jersey-server',
-		':jersey-servlet',
-		'.contribs:jersey-guice'
-	].each { compile "com.sun.jersey" + it + ":1.11" }
+		'jersey-core',
+		'jersey-server',
+		'jersey-servlet'
+	].each { compile "com.sun.jersey:" + it + ":1.11" }
 
-	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
 	compile 'com.google.guava:guava:11.+'
-
-	[
-		':guice',
-		'.extensions:guice-multibindings',
-		'.extensions:guice-assistedinject'
-	].each { compile 'com.google.inject' + it + ":3.0"}
-
-	compile 'com.ibm.icu:icu4j:4.8.1.1'
-	compile 'com.google:soy:latest'
+	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
+	compile 'com.github.spullara.mustache.java:builder:0.6+'
 
 	providedCompile 'org.mortbay.jetty:servlet-api:3.0+'
 
@@ -56,8 +47,8 @@ sourceSets {
 	}
 }
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 webAppDirName = "src/webapp"
 
 tasks.withType(AbstractCompile).each { it.options.encoding = "UTF-8" }
@@ -66,7 +57,7 @@ eclipse {
 	project { name = 'koshinuke.java' }
 	classpath {
 		containers = [
-			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6'
+			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
 		]
 		defaultOutputDir = file('bin')
 		file {
@@ -80,46 +71,44 @@ eclipse {
 buildscript {
 	repositories {
 		mavenCentral()
-		mavenRepo(url: 'http://maven.jenkins-ci.org:8081/content/repositories/releases/')
+		mavenRepo(url: 'http://download.eclipse.org/jgit/maven')
 		flatDir { dirs 'lib' }
 	}
 	dependencies {
-		classpath 'args4j:args4j:2.0.+'
-		classpath 'rhino:js:1.7R2'
-		classpath 'org.objenesis:objenesis:1.2'
-		classpath 'com.google.guava:guava:11.+'
-
-		[
-			':guice',
-			'.extensions:guice-multibindings',
-			'.extensions:guice-assistedinject'
-		].each { classpath 'com.google.inject' + it + ":3.0"}
-		
-		classpath 'com.ibm.icu:icu4j:4.8.1.1'
-		classpath 'com.google:soy:latest'
+		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 		classpath 'org.eclipse.jetty:jetty-http:8.0.+'
 	}
 }
 
-task soy {
-	description = 'Generate SoyParseInfo'
-	doLast {
-		def args = [
-			"--outputDirectory",
-			"src/java/org/koshinuke/soy/",
-			"--javaPackage",
-			"org.koshinuke.soy",
-			"--javaClassNameSource",
-			"filename"
-		]
-		args += files {
-			file("src/webapp/WEB-INF/soy/").listFiles()
-		}.filter {
-			it.name.endsWith(".soy")
-		}.collect { it.absolutePath }
+import org.eclipse.jgit.api.*
+import org.eclipse.jgit.lib.*
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
-		com.google.template.soy.SoyParseInfoGenerator.main(args as String[])
+task cloneWeb() << {
+	def dir = file("src/webapp/static")
+	project.delete dir
+
+	CloneCommand clone = Git.cloneRepository();
+	clone.setURI "https://github.com/koshinuke/koshinuke.git"
+	clone.setDirectory dir
+	clone.setBranch "HEAD"
+	clone.setProgressMonitor new TextProgressMonitor()
+	clone.call()
+
+	project.copy {
+		into 'src/webapp/WEB-INF/mustache/'
+		from('src/webapp/static') { include '*.html' }
+		rename("html", "mustache")
 	}
+	def ft = fileTree(dir:dir, excludes:[
+		'build',
+		'css',
+		'flash',
+		'images',
+		'js'
+	])
+	ft.each { it.setWritable(true) }
+	project.delete { ft }
 }
 
 task passwd {

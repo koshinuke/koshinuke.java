@@ -13,9 +13,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
+import org.koshinuke.model.Csrf;
 import org.koshinuke.model.Repository;
-import org.koshinuke.soy.RepoSoyInfo;
-import org.koshinuke.soy.SoyTemplatesModule;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
@@ -26,13 +25,13 @@ public class RepositoryService {
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
-	public Viewable index(@Context HttpServletRequest request,
+	public Viewable index(@Context HttpServletRequest req,
 			@Context HttpServletResponse res) {
-		if (AuthenticationFilter.isLoggedIn(request) == false) {
+		if (AuthenticationFilter.isLoggedIn(req) == false) {
 			ServletUtil.redirect(res, "/login");
 			return null;
 		}
-		return SoyTemplatesModule.of(RepoSoyInfo.HOME);
+		return Csrf.of("/repos", req.getSession());
 	}
 
 	@GET

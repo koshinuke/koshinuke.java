@@ -1,42 +1,24 @@
 package org.koshinuke;
 
-import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.filter.EncodingFilter;
-import org.koshinuke.jersey.SoyViewProcessor;
-import org.koshinuke.service.ServiceModule;
-import org.koshinuke.soy.SoyTemplatesModule;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Singleton;
-import com.google.inject.servlet.GuiceServletContextListener;
-import com.sun.jersey.guice.JerseyServletModule;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import javax.ws.rs.core.Application;
+
+import org.koshinuke.service.LoginService;
+import org.koshinuke.service.RepositoryService;
 
 /**
  * @author taichi
  */
-public class App extends GuiceServletContextListener {
+public class App extends Application {
 
 	@Override
-	protected Injector getInjector() {
-		return Guice.createInjector(new JerseyServletModule() {
-			@Override
-			protected void configureServlets() {
-				install(new ServiceModule());
-				install(new SoyTemplatesModule());
-				bind(SoyViewProcessor.class).in(Singleton.class);
-				serve("/*")
-						.with(GuiceContainer.class,
-								ImmutableMap
-										.of(ServletContainer.PROPERTY_WEB_PAGE_CONTENT_REGEX,
-												"/[sS][tT][aA][tT][iI][cC]/.*"));
-				FilterKeyBindingBuilder filters = filter("/dynamic*", "/login");
-				filters.through(EncodingFilter.class);
-				filters.through(AuthenticationFilter.class);
-			}
-		});
+	public Set<Class<?>> getClasses() {
+		Set<Class<?>> classes = new HashSet<>();
+		classes.add(LoginService.class);
+		classes.add(RepositoryService.class);
+		return classes;
 	}
+
 }

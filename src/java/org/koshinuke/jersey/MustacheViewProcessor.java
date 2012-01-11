@@ -40,7 +40,7 @@ public class MustacheViewProcessor implements ViewProcessor<String> {
 			@Override
 			public BufferedReader getReader(String name)
 					throws MustacheException {
-				String path = "/WEB-INF/mustache" + name + ".mustache";
+				String path = "/WEB-INF/mustache" + name + ".html";
 
 				return new BufferedReader(new InputStreamReader(
 						sc.getResourceAsStream(path), ReaderWriter.UTF8));

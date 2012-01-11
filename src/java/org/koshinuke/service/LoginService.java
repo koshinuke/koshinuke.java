@@ -1,7 +1,5 @@
 package org.koshinuke.service;
 
-import java.security.Principal;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,7 +15,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.model.Csrf;
+import org.koshinuke.model.Auth;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
@@ -35,7 +33,7 @@ public class LoginService {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return Csrf.of("/login", req.getSession(true));
+		return Auth.of("/login", req.getSession(true));
 	}
 
 	static class Redirect extends ResponseImpl {
@@ -63,9 +61,7 @@ public class LoginService {
 				if (session != null) {
 					session.invalidate();
 				}
-				session = req.getSession(true);
-				Principal principal = req.getUserPrincipal();
-				session.setAttribute(AuthenticationFilter.AUTH, principal);
+				AuthenticationFilter.setUserPrincipal(req);
 				// HttpServletResponse#sendRedirectを使い、
 				// リダイレクト先としてコンテキストルートを指定すると、
 				// このリクエストを送信する際にはまだHttpSessionが存在しない為に、
@@ -78,6 +74,7 @@ public class LoginService {
 		} catch (ServletException e) {
 			// login failed
 		}
-		return Csrf.of("/login", req.getSession(true));
+		return Auth.of("/login", req.getSession(true));
 	}
+
 }

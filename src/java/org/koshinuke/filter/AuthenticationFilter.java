@@ -1,6 +1,7 @@
 package org.koshinuke.filter;
 
 import java.io.IOException;
+import java.security.Principal;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -37,11 +38,21 @@ public class AuthenticationFilter implements Filter {
 	}
 
 	public static boolean isLoggedIn(HttpServletRequest request) {
+		return getUserPrincipal(request) != null;
+	}
+
+	public static Principal getUserPrincipal(HttpServletRequest request) {
 		HttpSession session = request.getSession(false);
 		if (session != null) {
-			return session.getAttribute(AUTH) != null;
+			return (Principal) session.getAttribute(AUTH);
 		}
-		return false;
+		return null;
+	}
+
+	public static void setUserPrincipal(HttpServletRequest req) {
+		HttpSession session = req.getSession(true);
+		Principal principal = req.getUserPrincipal();
+		session.setAttribute(AuthenticationFilter.AUTH, principal);
 	}
 
 	@Override

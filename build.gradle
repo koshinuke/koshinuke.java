@@ -84,12 +84,14 @@ import org.eclipse.jgit.api.*
 import org.eclipse.jgit.lib.*
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
-task cloneWeb() << {
-	def dir = file("src/webapp/static")
-	project.delete dir
+task cloneWeb(dependsOn: clean) << {
+	def dir = file("$buildDir/cloneweb/")
+
+	FileSystem fs = FileSystems.getDefault()
+	Path cp = fs.getPath(koshinuke_path, ".git")
 
 	CloneCommand clone = Git.cloneRepository();
-	clone.setURI "https://github.com/koshinuke/koshinuke.git"
+	clone.setURI cp.toUri().toString()
 	clone.setDirectory dir
 	clone.setBranch "HEAD"
 	clone.setProgressMonitor new TextProgressMonitor()
@@ -97,18 +99,22 @@ task cloneWeb() << {
 
 	project.copy {
 		into 'src/webapp/WEB-INF/mustache/'
-		from('src/webapp/static') { include '*.html' }
-		rename("html", "mustache")
+		from(dir) { include '*.html' }
 	}
-	def ft = fileTree(dir:dir, excludes:[
-		'build',
-		'css',
-		'flash',
-		'images',
-		'js'
-	])
-	ft.each { it.setWritable(true) }
-	project.delete { ft }
+	project.copy {
+		into 'src/webapp/'
+		from(dir) { include "static/**" }
+		exclude "**/.git*"
+	}
+}
+
+import java.nio.file.*
+
+task sym << {
+	FileSystem fs = FileSystems.getDefault()
+	Path cp = fs.getPath(closure_path)
+	Path tg = fs.getPath("src/webapp/static/closure-library")
+	Files.createSymbolicLink(tg, cp);
 }
 
 task passwd {

@@ -1,5 +1,6 @@
 package org.koshinuke.service;
 
+import java.security.Principal;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -13,8 +14,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.model.Csrf;
 import org.koshinuke.model.Repository;
+import org.koshinuke.model.Auth;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
@@ -27,11 +28,12 @@ public class RepositoryService {
 	@Produces(MediaType.TEXT_HTML)
 	public Viewable index(@Context HttpServletRequest req,
 			@Context HttpServletResponse res) {
-		if (AuthenticationFilter.isLoggedIn(req) == false) {
+		Principal p = AuthenticationFilter.getUserPrincipal(req);
+		if (p == null) {
 			ServletUtil.redirect(res, "/login");
 			return null;
 		}
-		return Csrf.of("/repos", req.getSession());
+		return Auth.of("/repos", req.getSession(), p);
 	}
 
 	@GET

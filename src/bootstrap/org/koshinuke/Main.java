@@ -1,5 +1,6 @@
 package org.koshinuke;
 
+import java.io.File;
 import java.security.SecureRandom;
 
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
@@ -9,6 +10,7 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.koshinuke.conf.Configuration;
 
 public class Main {
 
@@ -16,6 +18,8 @@ public class Main {
 		Server server = new Server(9998);
 		ServletContextHandler sch = new WebAppContext("src/webapp", "/");
 		sessionCookieSecured(sch);
+		sch.setAttribute(Configuration.NAME, new File(
+				"etc/koshinuke.properties").toURI().toURL());
 		server.setHandler(sch);
 		SecurityHandler secure = securitySettings(sch);
 		server.start();

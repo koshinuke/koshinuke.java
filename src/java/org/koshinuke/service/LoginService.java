@@ -21,7 +21,9 @@ import org.koshinuke.util.ServletUtil;
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.core.header.OutBoundHeaders;
 import com.sun.jersey.core.spi.factory.ResponseImpl;
+import com.sun.jersey.spi.resource.Singleton;
 
+@Singleton
 @Path("login")
 @Produces(MediaType.TEXT_HTML)
 public class LoginService {
@@ -33,7 +35,7 @@ public class LoginService {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return Auth.of("/login", req.getSession(true));
+		return Auth.of("/login", req.getSession());
 	}
 
 	static class Redirect extends ResponseImpl {
@@ -74,7 +76,7 @@ public class LoginService {
 		} catch (ServletException e) {
 			// login failed
 		}
-		return Auth.of("/login", req.getSession(true));
+		return Auth.of("/login", req.getSession());
 	}
 
 }

@@ -10,6 +10,7 @@ import javax.ws.rs.core.Application;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.koshinuke.jersey.ConfigurationtProvider;
 import org.koshinuke.model.Repository;
 import org.koshinuke.test.JettyTestContainerFactory;
 import org.koshinuke.test.SimpleAppDescriptor;
@@ -27,8 +28,9 @@ public class RepositoryServiceTest extends JerseyTest {
 	public static class AP extends Application {
 		@Override
 		public Set<Class<?>> getClasses() {
-			Set<Class<?>> s = new HashSet<Class<?>>();
+			Set<Class<?>> s = new HashSet<>();
 			s.add(RepositoryService.class);
+			s.add(ConfigurationtProvider.class);
 			return s;
 		}
 	}

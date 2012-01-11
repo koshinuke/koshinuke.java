@@ -1,10 +1,13 @@
 package org.koshinuke.test;
 
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URI;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.koshinuke.conf.Configuration;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
@@ -36,17 +39,25 @@ public class JettyTestContainerFactory implements TestContainerFactory {
 		Server server;
 		URI baseUri;
 
-		public JettyTestContainer(URI baseUri, SimpleAppDescriptor ad) {
+		public JettyTestContainer(URI baseUri, SimpleAppDescriptor ad)
+				throws IllegalArgumentException {
 			this.baseUri = baseUri;
 
-			ServletHolder holder = new ServletHolder(ServletContainer.class);
-			holder.setInitParameter(ServletContainer.APPLICATION_CONFIG_CLASS,
-					ad.getApplicationClass().getName());
-			ServletContextHandler sch = new ServletContextHandler();
-			sch.setResourceBase("src/webapp");
-			sch.addServlet(holder, "/*");
-			this.server = new Server(this.baseUri.getPort());
-			this.server.setHandler(sch);
+			try {
+				ServletHolder holder = new ServletHolder(ServletContainer.class);
+				holder.setInitParameter(
+						ServletContainer.APPLICATION_CONFIG_CLASS, ad
+								.getApplicationClass().getName());
+				ServletContextHandler sch = new ServletContextHandler();
+				sch.setAttribute(Configuration.NAME, new File(
+						"src/test/koshinuke-test.properties").toURI().toURL());
+				sch.setResourceBase("src/webapp");
+				sch.addServlet(holder, "/*");
+				this.server = new Server(this.baseUri.getPort());
+				this.server.setHandler(sch);
+			} catch (MalformedURLException e) {
+				throw new IllegalArgumentException(e);
+			}
 		}
 
 		@Override

@@ -14,12 +14,17 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.model.Repository;
 import org.koshinuke.model.Auth;
+import org.koshinuke.model.Repository;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
+import com.sun.jersey.spi.resource.Singleton;
 
+/**
+ * @author taichi
+ */
+@Singleton
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
@@ -44,8 +49,8 @@ public class RepositoryService {
 	}
 
 	@GET
+	@HeaderParam("X-Requested-With")
 	@Path("/dynamic/{project}/{repository}")
-	// @HeaderParam("X-Requested-With")
 	public Repository name(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		Repository r = new Repository();
@@ -57,8 +62,8 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Path("/dynamic/{project}/{repository}/tree/{branch}")
 	@HeaderParam("X-Requested-With")
+	@Path("/dynamic/{project}/{repository}/tree/{branch}")
 	public String tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("branch") String branch) {

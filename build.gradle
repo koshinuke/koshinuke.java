@@ -80,6 +80,7 @@ buildscript {
 	}
 }
 
+import java.nio.file.*
 import org.eclipse.jgit.api.*
 import org.eclipse.jgit.lib.*
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -107,8 +108,6 @@ task cloneWeb(dependsOn: clean) << {
 		exclude "**/.git*"
 	}
 }
-
-import java.nio.file.*
 
 task sym << {
 	FileSystem fs = FileSystems.getDefault()

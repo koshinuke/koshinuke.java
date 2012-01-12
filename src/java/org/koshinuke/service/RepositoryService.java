@@ -2,7 +2,7 @@ package org.koshinuke.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,11 +19,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
-import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.model.Auth;
+import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.Repository;
+import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.RandomUtil;
 import org.koshinuke.util.ServletUtil;
 
@@ -45,9 +47,8 @@ public class RepositoryService {
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
-	public Viewable index(@Context HttpServletRequest req,
-			@Context HttpServletResponse res) {
-		Principal p = AuthenticationFilter.getUserPrincipal(req);
+	public Viewable index(@Context KoshinukePrincipal p,
+			@Context HttpServletRequest req, @Context HttpServletResponse res) {
 		if (p == null) {
 			ServletUtil.redirect(res, "/login");
 			return null;
@@ -59,42 +60,51 @@ public class RepositoryService {
 	@HeaderParam("X-Requested-With")
 	@Path("/dynamic")
 	public List<Repository> repolist() {
-		// TODO
-		return null;
+		return new ArrayList<>();
 	}
 
 	@POST
 	@HeaderParam("X-Requested-With")
 	@Path("/dynamic")
-	public List<Repository> init(@Context HttpServletRequest request,
+	public List<Repository> init(@Context KoshinukePrincipal p,
 			@FormParam("rn") String name, @FormParam("rrn") String readme)
 			throws IOException, GitAPIException {
 		if (StringUtils.isEmptyOrNull(name) == false) {
 			String[] ary = name.split("/");
 			if (ary.length == 2) {
-				File newrepo = new File(config.getRepositoryRootDir(), name);
-				if (newrepo.exists() == false) {
-					Git.init().setBare(true).setDirectory(newrepo).call();
-					if (StringUtils.isEmptyOrNull(readme) == false) {
-						File working = pickWorkingDir(config.getWorkingDir());
-						Git g = Git.cloneRepository().setBranch("HEAD")
-								.setDirectory(working).call();
-						File readmeFile = new File(working, "README");
-						Files.write(readme, readmeFile, ReaderWriter.UTF8);
-						g.add().addFilepattern(readmeFile.getName()).call();
-						Principal p = AuthenticationFilter
-								.getUserPrincipal(request);
-						// TODO ユーザのメールアドレス
-						g.commit().setMessage("initial commit.")
-								.setCommitter(config.getSystemIdent())
-								.setAuthor(p.getName(), "").call();
-						g.push().call();
-						working.delete();
+				java.nio.file.Path repoRoot = this.config
+						.getRepositoryRootDir().toPath();
+				java.nio.file.Path path = repoRoot.resolve(name).normalize();
+				if (path.startsWith(repoRoot)
+						&& (path.equals(repoRoot) == false)) {
+					File newrepo = path.toFile();
+					if (newrepo.exists() == false) {
+						Git.init().setBare(true).setDirectory(newrepo).call();
+						if (StringUtils.isEmptyOrNull(readme) == false) {
+							File working = pickWorkingDir(this.config
+									.getWorkingDir());
+							Git g = Git.cloneRepository().setBranch("HEAD")
+									.setURI(newrepo.toURI().toURL().toString())
+									.setDirectory(working).call();
+							File readmeFile = new File(working, "README");
+							Files.write(readme, readmeFile, ReaderWriter.UTF8);
+							g.add().addFilepattern(readmeFile.getName()).call();
+
+							PersonIdent commiter = this.config.getSystemIdent();
+							PersonIdent author = new PersonIdent(p.getName(),
+									p.getMail(), commiter.getWhen(),
+									commiter.getTimeZone());
+							g.commit().setMessage("initial commit.")
+									.setCommitter(commiter).setAuthor(author)
+									.call();
+							g.push().call();
+							FileUtil.delete(working.getAbsolutePath());
+						}
 					}
 				}
 			}
 		}
-		return repolist();
+		return this.repolist();
 	}
 
 	protected static File pickWorkingDir(File root) {

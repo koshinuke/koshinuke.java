@@ -13,6 +13,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.koshinuke.model.DefaultKoshinukePrincipal;
+import org.koshinuke.model.KoshinukePrincipal;
+
 /**
  * @author taichi
  */
@@ -41,10 +44,10 @@ public class AuthenticationFilter implements Filter {
 		return getUserPrincipal(request) != null;
 	}
 
-	public static Principal getUserPrincipal(HttpServletRequest request) {
+	public static KoshinukePrincipal getUserPrincipal(HttpServletRequest request) {
 		HttpSession session = request.getSession(false);
 		if (session != null) {
-			return (Principal) session.getAttribute(AUTH);
+			return (KoshinukePrincipal) session.getAttribute(AUTH);
 		}
 		return null;
 	}
@@ -52,7 +55,8 @@ public class AuthenticationFilter implements Filter {
 	public static void setUserPrincipal(HttpServletRequest req) {
 		HttpSession session = req.getSession(true);
 		Principal principal = req.getUserPrincipal();
-		session.setAttribute(AuthenticationFilter.AUTH, principal);
+		session.setAttribute(AuthenticationFilter.AUTH,
+				new DefaultKoshinukePrincipal(principal));
 	}
 
 	@Override

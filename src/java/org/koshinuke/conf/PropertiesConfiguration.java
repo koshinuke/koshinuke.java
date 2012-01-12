@@ -18,24 +18,27 @@ public class PropertiesConfiguration implements Configuration {
 	@Override
 	public void configure(URL resource) throws IOException {
 		try (InputStream in = resource.openStream()) {
-			properties.load(in);
+			this.properties.load(in);
 		}
 	}
 
 	@Override
 	public File getRepositoryRootDir() {
-		return new File(properties.getProperty(REPO_ROOT, "repos/bares"));
+		return new File(this.properties.getProperty(REPO_ROOT, "repos/bares"))
+				.getAbsoluteFile();
 	}
 
 	@Override
 	public File getWorkingDir() {
-		return new File(properties.getProperty(WORKING, "repos/workings"));
+		return new File(this.properties.getProperty(WORKING, "repos/workings"))
+				.getAbsoluteFile();
 	}
 
 	@Override
 	public PersonIdent getSystemIdent() {
-		String name = properties.getProperty(SYSTEM_IDENT_NAME, "koshinuke");
-		String mail = properties.getProperty(SYSTEM_IDENT_MAIL,
+		String name = this.properties.getProperty(SYSTEM_IDENT_NAME,
+				"koshinuke");
+		String mail = this.properties.getProperty(SYSTEM_IDENT_MAIL,
 				"koshinuke@koshinuke.org");
 		return new PersonIdent(name, mail);
 	}

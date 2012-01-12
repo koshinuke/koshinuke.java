@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
 
+import org.eclipse.jgit.lib.PersonIdent;
+
 /**
  * @author taichi
  */
@@ -21,10 +23,20 @@ public class PropertiesConfiguration implements Configuration {
 	}
 
 	@Override
-	public File getRepositoryRoot() {
-		File f = new File(this.properties.getProperty(REPO_ROOT));
-		// TODO エラーチェック
-		return f;
+	public File getRepositoryRootDir() {
+		return new File(properties.getProperty(REPO_ROOT, "repos/bares"));
 	}
 
+	@Override
+	public File getWorkingDir() {
+		return new File(properties.getProperty(WORKING, "repos/workings"));
+	}
+
+	@Override
+	public PersonIdent getSystemIdent() {
+		String name = properties.getProperty(SYSTEM_IDENT_NAME, "koshinuke");
+		String mail = properties.getProperty(SYSTEM_IDENT_MAIL,
+				"koshinuke@koshinuke.org");
+		return new PersonIdent(name, mail);
+	}
 }

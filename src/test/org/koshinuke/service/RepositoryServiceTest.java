@@ -46,10 +46,11 @@ public class RepositoryServiceTest extends JerseyTest {
 		return new SimpleAppDescriptor.Builder(AP.class).build();
 	}
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		this.target = new RepositoryService();
+		target = new RepositoryService();
 	}
 
 	@Test
@@ -62,14 +63,14 @@ public class RepositoryServiceTest extends JerseyTest {
 
 	@Test
 	public void testName() {
-		Repository r = this.target.name("a", "b");
+		Repository r = target.name("a", "b");
 		assertEquals(r.path, "a");
 		assertEquals(r.name, "b");
 	}
 
 	@Test
 	public void testTree() {
-		assertNotNull(this.target.tree("a", "b", "c"));
+		assertNotNull(target.tree("a", "b", "c"));
 	}
 
 }

@@ -2,6 +2,10 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
+configurations.all {
+	resolutionStrategy.cacheChangingModulesFor 14, 'days'
+}
+
 repositories {
 	mavenCentral()
 	mavenRepo(url: 'http://download.eclipse.org/jgit/maven')

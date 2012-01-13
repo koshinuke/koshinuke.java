@@ -73,7 +73,7 @@ public class JettyTestContainerFactory implements TestContainerFactory {
 		@Override
 		public void start() {
 			try {
-				server.start();
+				this.server.start();
 			} catch (Exception e) {
 				throw new TestContainerException(e);
 			}
@@ -82,8 +82,8 @@ public class JettyTestContainerFactory implements TestContainerFactory {
 		@Override
 		public void stop() {
 			try {
-				if (server.isStarted()) {
-					server.stop();
+				if (this.server.isStarted()) {
+					this.server.stop();
 				}
 			} catch (Exception e) {
 				throw new TestContainerException(e);

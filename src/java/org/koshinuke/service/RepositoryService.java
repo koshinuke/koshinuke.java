@@ -9,7 +9,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -57,14 +56,20 @@ public class RepositoryService {
 	}
 
 	@GET
-	@HeaderParam("X-Requested-With")
+	@Path("/dynamic")
+	@Produces(MediaType.TEXT_HTML)
+	public Viewable forwardToIndex(@Context HttpServletResponse res) {
+		ServletUtil.redirect(res, "/");
+		return null;
+	}
+
+	@GET
 	@Path("/dynamic")
 	public List<Repository> repolist() {
 		return new ArrayList<>();
 	}
 
 	@POST
-	@HeaderParam("X-Requested-With")
 	@Path("/dynamic")
 	public List<Repository> init(@Context KoshinukePrincipal p,
 			@FormParam("rn") String name, @FormParam("rrn") String readme)
@@ -75,8 +80,7 @@ public class RepositoryService {
 				java.nio.file.Path repoRoot = this.config
 						.getRepositoryRootDir().toPath();
 				java.nio.file.Path path = repoRoot.resolve(name).normalize();
-				if (path.startsWith(repoRoot)
-						&& (path.equals(repoRoot) == false)) {
+				if (path.startsWith(repoRoot) && path.equals(repoRoot) == false) {
 					File newrepo = path.toFile();
 					if (newrepo.exists() == false) {
 						Git.init().setBare(true).setDirectory(newrepo).call();
@@ -116,7 +120,6 @@ public class RepositoryService {
 	}
 
 	@GET
-	@HeaderParam("X-Requested-With")
 	@Path("/dynamic/{project}/{repository}")
 	public Repository name(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
@@ -129,7 +132,6 @@ public class RepositoryService {
 	}
 
 	@GET
-	@HeaderParam("X-Requested-With")
 	@Path("/dynamic/{project}/{repository}/tree/{branch}")
 	public String tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,

@@ -79,7 +79,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		form.add("rrn", readme);
 
 		this.resource().path("/dynamic")
-				.header("X-Requested-With", "XMLHttpRequest")
+				.accept(MediaType.APPLICATION_JSON_TYPE)
 				.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
 				.post(String.class, form);
 
@@ -100,7 +100,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testService() throws Exception {
 		WebResource webResource = this.resource();
 		String responseMsg = webResource.path("dynamic/a/b/tree/c")
-				.header("X-Requested-With", "XMLHttpRequest").get(String.class);
+				.accept(MediaType.APPLICATION_JSON_TYPE).get(String.class);
 		assertNotNull(responseMsg);
 	}
 

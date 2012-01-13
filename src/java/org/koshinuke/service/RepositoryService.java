@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,11 +21,14 @@ import javax.ws.rs.core.MediaType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.model.Auth;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.Repository;
+import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.RandomUtil;
 import org.koshinuke.util.ServletUtil;
@@ -40,6 +45,9 @@ import com.sun.jersey.spi.resource.Singleton;
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
+
+	static final Logger LOG = Logger.getLogger(RepositoryService.class
+			.getName());
 
 	@Context
 	Configuration config;
@@ -65,13 +73,35 @@ public class RepositoryService {
 
 	@GET
 	@Path("/dynamic")
-	public List<Repository> repolist() {
-		return new ArrayList<>();
+	public List<RepositoryModel> repolist() {
+		List<RepositoryModel> repos = new ArrayList<>();
+		File dir = this.config.getRepositoryRootDir();
+		for (File parent : dir.listFiles()) {
+			for (File maybeRepo : parent.listFiles()) {
+				RepositoryModel repo = this.to(maybeRepo);
+				if (repo != null) {
+					repos.add(repo);
+				}
+			}
+		}
+		return repos;
+	}
+
+	protected RepositoryModel to(File maybeRepo) {
+		try {
+			FileRepositoryBuilder builder = new FileRepositoryBuilder();
+			FileRepository repo = builder.setGitDir(maybeRepo)
+					.readEnvironment().build();
+			return new RepositoryModel(this.config.getGitHost(), repo);
+		} catch (IOException e) {
+			LOG.log(Level.WARNING, e.getMessage(), e);
+		}
+		return null;
 	}
 
 	@POST
 	@Path("/dynamic")
-	public List<Repository> init(@Context KoshinukePrincipal p,
+	public List<RepositoryModel> init(@Context KoshinukePrincipal p,
 			@FormParam("rn") String name, @FormParam("rrn") String readme)
 			throws IOException, GitAPIException {
 		if (StringUtils.isEmptyOrNull(name) == false) {

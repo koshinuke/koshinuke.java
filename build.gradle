@@ -46,8 +46,8 @@ sourceSets {
 	}
 	bootstrap { java.srcDir "src/bootstrap" }
 	test {
-		java.srcDirs 'src/test'
-		resources.srcDir 'src/test'
+		java.srcDir 'test/java'
+		resources.srcDir 'test/java'
 	}
 }
 

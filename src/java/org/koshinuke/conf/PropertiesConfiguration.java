@@ -1,11 +1,14 @@
 package org.koshinuke.conf;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,14 +24,16 @@ public class PropertiesConfiguration implements Configuration {
 	static final Logger LOG = Logger.getLogger(PropertiesConfiguration.class
 			.getName());
 
-	static final File REPO;
-	static final File TEMP;
+	static final Path REPO;
+	static final Path TEMP;
 	static final String HOSTNAME;
 
 	static {
-		File root = new File(System.getProperty("java.io.tmpdir"), "koshinuke");
-		REPO = new File(root, "bares");
-		TEMP = new File(root, "working");
+		FileSystem fs = FileSystems.getDefault();
+		Path root = fs.getPath(System.getProperty("java.io.tmpdir"),
+				"koshinuke");
+		REPO = root.resolve("pares");
+		TEMP = root.resolve("temp");
 		String host = "localhost";
 		try {
 			host = InetAddress.getLocalHost().getHostName();
@@ -40,37 +45,38 @@ public class PropertiesConfiguration implements Configuration {
 
 	Properties properties = new Properties();
 
-	File rootDir;
-	File tempDir;
+	Path rootDir;
+	Path tempDir;
 
 	@Override
 	public void configure(URL resource) throws IOException {
 		try (InputStream in = resource.openStream()) {
 			this.properties.load(in);
 		}
-		this.rootDir = this.dir(REPO_ROOT, REPO);
-		this.tempDir = this.dir(TEMPORARY, TEMP);
+		FileSystem fs = FileSystems.getDefault();
+		this.rootDir = this.dir(fs, REPO_ROOT, REPO);
+		this.tempDir = this.dir(fs, TEMPORARY, TEMP);
 	}
 
-	protected File dir(String key, File DEF) {
+	protected Path dir(FileSystem fs, String key, Path DEF) {
 		String path = this.properties.getProperty(key);
 		if (StringUtils.isEmptyOrNull(path)) {
 			return DEF;
 		}
-		File f = new File(path).getAbsoluteFile();
-		if (f.canWrite() == false) {
-			return DEF;
+		Path p = fs.getPath(path);
+		if (Files.exists(p) == false) {
+			p.toFile().mkdirs();
 		}
-		return f;
+		return p.toAbsolutePath();
 	}
 
 	@Override
-	public File getRepositoryRootDir() {
+	public Path getRepositoryRootDir() {
 		return this.rootDir;
 	}
 
 	@Override
-	public File getWorkingDir() {
+	public Path getWorkingDir() {
 		return this.tempDir;
 	}
 

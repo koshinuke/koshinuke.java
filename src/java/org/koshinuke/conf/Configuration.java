@@ -1,8 +1,8 @@
 package org.koshinuke.conf;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 
 import org.eclipse.jgit.lib.PersonIdent;
 
@@ -26,9 +26,9 @@ public interface Configuration {
 
 	void configure(URL resource) throws IOException;
 
-	File getRepositoryRootDir();
+	Path getRepositoryRootDir();
 
-	File getWorkingDir();
+	Path getWorkingDir();
 
 	PersonIdent getSystemIdent();
 

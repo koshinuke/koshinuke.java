@@ -2,9 +2,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
-configurations.all {
-	resolutionStrategy.cacheChangingModulesFor 14, 'days'
-}
+configurations.all { resolutionStrategy.cacheChangingModulesFor 14, 'days' }
 
 repositories {
 	mavenCentral()
@@ -55,7 +53,9 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 webAppDirName = "src/webapp"
 
-tasks.withType(AbstractCompile).each { it.options.encoding = "UTF-8" }
+tasks.withType(AbstractCompile).each {
+	it.options.encoding = "UTF-8"
+}
 
 eclipse {
 	project { name = 'koshinuke.java' }
@@ -66,7 +66,7 @@ eclipse {
 		defaultOutputDir = file('bin')
 		file {
 			whenMerged {
-				it.entries.find { it.path == 'src/java'}?.output = 'src/webapp/WEB-INF/classes'
+				it.entries.find { it.path == 'src/java' }?.output = 'src/webapp/WEB-INF/classes'
 			}
 		}
 	}
@@ -85,8 +85,10 @@ buildscript {
 	}
 }
 
+import java.io.File;
 import java.nio.file.*
 import org.eclipse.jgit.api.*
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.lib.*
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
@@ -119,6 +121,43 @@ task sym << {
 	Path cp = fs.getPath(closure_path)
 	Path tg = fs.getPath("src/webapp/static/closure-library")
 	Files.createSymbolicLink(tg, cp);
+}
+
+task testrepo {
+	description = "make repository for testing."
+	doLast {
+		delete "test/repo"
+
+		File working = new File("test/repo");
+		Git g = Git.init().setDirectory(working).call();
+
+		def addFile = { path, content ->
+			def newone = new File(working, path);
+			newone.getParentFile().mkdirs();
+			com.google.common.io.Files.write(content, newone, java.nio.charset.Charset.forName("UTF-8"));
+			g.add().addFilepattern(path).call();
+		}
+
+		addFile("README", "readme readme");
+
+		g.commit().setMessage("initial commit").setAuthor("test", "test@koshinuke.org").call();
+
+		g.checkout().setCreateBranch(true).setName("test/hoge").call();
+		addFile("hoge/moge/piro.txt", "gyappa gyappa");
+		g.commit().setMessage("gyawawa").setAuthor("monster", "mostol@koshinuke.org").call();
+		g.tag().setName("0.0.1").setMessage("GYOWAWA!!").call();
+
+		g.checkout().setName("master").call();
+		addFile("moge/mmooggee.txt", "mogemoge piropiro");
+		addFile("moge/piro/ppp.txt", "33lladkkiec");
+		g.commit().setMessage("i'm not evil.").setAuthor("taichi", "taichi@koshinuke.org").call();
+		g.tag().setName("0.0.2").setMessage("TAG tag tag....").call();
+
+		g.checkout().setCreateBranch(true).setName("branchbranch").call();
+		addFile("hoge/piyo/piyo.txt", "pppppp");
+		addFile("hoge/piyo/mogemoge.conf", ".....iiiiiiii");
+		g.commit().setMessage("commit 2 files").setAuthor("one_monster", "one@koshinuke.org").call();
+	}
 }
 
 task passwd {

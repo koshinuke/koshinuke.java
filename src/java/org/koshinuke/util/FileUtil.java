@@ -3,12 +3,16 @@ package org.koshinuke.util;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
  * @author taichi
  */
 public class FileUtil {
+
+	static final Logger LOG = Logger.getLogger(FileUtil.class.getName());
 
 	public interface NameFilter {
 		boolean accept(String name);
@@ -94,7 +98,11 @@ public class FileUtil {
 		walk(path, filter, new FileHandler() {
 			@Override
 			public void handle(File file) {
-				file.delete();
+				if (file.delete() == false) {
+					LOG.log(Level.WARNING,
+							"delete failed. any resources will be leak."
+									+ file.getAbsolutePath());
+				}
 			}
 		});
 	}

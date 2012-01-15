@@ -87,13 +87,18 @@ public class RepositoryService {
 	}
 
 	protected RepositoryModel to(File maybeRepo) {
+		FileRepository repo = null;
 		try {
 			FileRepositoryBuilder builder = new FileRepositoryBuilder();
-			FileRepository repo = builder.setGitDir(maybeRepo)
-					.readEnvironment().setMustExist(true).build();
+			repo = builder.setGitDir(maybeRepo).readEnvironment()
+					.setMustExist(true).build();
 			return new RepositoryModel(this.config.getGitHost(), repo);
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, e.getMessage(), e);
+		} finally {
+			if (repo != null) {
+				repo.close();
+			}
 		}
 		return null;
 	}
@@ -126,22 +131,33 @@ public class RepositoryService {
 			NoFilepatternException, NoHeadException, NoMessageException,
 			UnmergedPathException, ConcurrentRefUpdateException,
 			WrongRepositoryStateException, InvalidRemoteException {
-		Git.init().setBare(true).setDirectory(newrepo).call();
+		Git initialized = null;
 		File working = pickWorkingDir(this.config.getWorkingDir());
 		try {
-			Git g = Git.cloneRepository()
-					.setURI(newrepo.toURI().toURL().toString())
-					.setDirectory(working).call();
-			File readmeFile = new File(working, "README");
-			Files.write(readme, readmeFile, ReaderWriter.UTF8);
-			g.add().addFilepattern(readmeFile.getName()).call();
-			PersonIdent commiter = this.config.getSystemIdent();
-			PersonIdent author = new PersonIdent(p.getName(), p.getMail(),
-					commiter.getWhen(), commiter.getTimeZone());
-			g.commit().setMessage("initial commit.").setCommitter(commiter)
-					.setAuthor(author).call();
-			g.push().call();
+			initialized = Git.init().setBare(true).setDirectory(newrepo).call();
+			Git g = null;
+			try {
+				g = Git.cloneRepository()
+						.setURI(newrepo.toURI().toURL().toString())
+						.setDirectory(working).call();
+				File readmeFile = new File(working, "README");
+				Files.write(readme, readmeFile, ReaderWriter.UTF8);
+				g.add().addFilepattern(readmeFile.getName()).call();
+				PersonIdent commiter = this.config.getSystemIdent();
+				PersonIdent author = new PersonIdent(p.getName(), p.getMail(),
+						commiter.getWhen(), commiter.getTimeZone());
+				g.commit().setMessage("initial commit.").setCommitter(commiter)
+						.setAuthor(author).call();
+				g.push().call();
+			} finally {
+				if (g != null) {
+					g.getRepository().close();
+				}
+			}
 		} finally {
+			if (initialized != null) {
+				initialized.getRepository().close();
+			}
 			FileUtil.delete(working.getAbsolutePath());
 		}
 	}

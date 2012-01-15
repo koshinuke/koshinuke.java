@@ -61,10 +61,10 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		super.setUp();
 		this.target = new RepositoryService();
 		this.target.config = new TestConfigurationtProvider().getValue();
-		this.deleteDirs();
 	}
 
-	private void deleteDirs() throws IOException {
+	@Before
+	public void deleteDirs() throws IOException {
 		List<File> dirs = new ArrayList<>();
 		dirs.add(new File("bin", "testInit"));
 		dirs.add(this.target.config.getRepositoryRootDir().toFile()
@@ -109,14 +109,21 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		Path repo = this.target.config.getRepositoryRootDir().resolve(path);
 		assertTrue(Files.exists(repo));
 
-		Git.cloneRepository().setURI(repo.toUri().toString())
-				.setDirectory(dest).call();
-		File R = new File(dest, "README");
-		assertTrue(R.exists());
+		Git g = null;
+		try {
+			g = Git.cloneRepository().setURI(repo.toUri().toString())
+					.setDirectory(dest).call();
+			File R = new File(dest, "README");
+			assertTrue(R.exists());
 
-		String destText = Resources.toString(R.toURI().toURL(),
-				ReaderWriter.UTF8);
-		assertEquals(readme, destText);
+			String destText = Resources.toString(R.toURI().toURL(),
+					ReaderWriter.UTF8);
+			assertEquals(readme, destText);
+		} finally {
+			if (g != null) {
+				g.getRepository().close();
+			}
+		}
 	}
 
 	@Test

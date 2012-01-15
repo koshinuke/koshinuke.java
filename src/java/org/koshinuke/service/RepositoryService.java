@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -33,7 +32,6 @@ import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
-import org.koshinuke.model.Auth;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.Repository;
 import org.koshinuke.model.RepositoryModel;
@@ -50,7 +48,7 @@ import com.sun.jersey.spi.resource.Singleton;
  * @author taichi
  */
 @Singleton
-@Path("")
+@Path("/dynamic")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
 
@@ -62,25 +60,12 @@ public class RepositoryService {
 
 	@GET
 	@Produces(MediaType.TEXT_HTML)
-	public Viewable index(@Context KoshinukePrincipal p,
-			@Context HttpServletRequest req, @Context HttpServletResponse res) {
-		if (p == null) {
-			ServletUtil.redirect(res, "/login");
-			return null;
-		}
-		return Auth.of("/repos", req.getSession(), p);
-	}
-
-	@GET
-	@Path("/dynamic")
-	@Produces(MediaType.TEXT_HTML)
 	public Viewable forwardToIndex(@Context HttpServletResponse res) {
 		ServletUtil.redirect(res, "/");
 		return null;
 	}
 
 	@GET
-	@Path("/dynamic")
 	public List<RepositoryModel> list() throws IOException {
 		final List<RepositoryModel> repos = new ArrayList<>();
 		java.nio.file.Path dir = this.config.getRepositoryRootDir();
@@ -114,7 +99,6 @@ public class RepositoryService {
 	}
 
 	@POST
-	@Path("/dynamic")
 	public List<RepositoryModel> init(@Context KoshinukePrincipal p,
 			@FormParam("rn") String name, @FormParam("rr") String readme)
 			throws Exception {
@@ -171,7 +155,7 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Path("/dynamic/{project}/{repository}")
+	@Path("/{project}/{repository}")
 	public Repository name(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		Repository r = new Repository();
@@ -183,7 +167,7 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Path("/dynamic/{project}/{repository}/tree/{branch}")
+	@Path("/{project}/{repository}/tree/{branch}")
 	public String tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("branch") String branch) {

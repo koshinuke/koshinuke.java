@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.model.Auth;
+import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
@@ -24,11 +25,23 @@ import com.sun.jersey.core.spi.factory.ResponseImpl;
 import com.sun.jersey.spi.resource.Singleton;
 
 @Singleton
-@Path("login")
+@Path("")
 @Produces(MediaType.TEXT_HTML)
 public class LoginService {
 
 	@GET
+	@Produces(MediaType.TEXT_HTML)
+	public Viewable index(@Context KoshinukePrincipal p,
+			@Context HttpServletRequest req, @Context HttpServletResponse res) {
+		if (p == null) {
+			ServletUtil.redirect(res, "/login");
+			return null;
+		}
+		return Auth.of("/repos", req.getSession(), p);
+	}
+
+	@GET
+	@Path("/login")
 	public Viewable login(@Context HttpServletRequest req,
 			@Context HttpServletResponse res) {
 		if (AuthenticationFilter.isLoggedIn(req)) {
@@ -53,6 +66,7 @@ public class LoginService {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Path("/login")
 	public Object login(@Context HttpServletRequest req,
 			@Context HttpServletResponse res, @FormParam("u") String u,
 			@FormParam("p") String p, @FormParam("t") String t) {

@@ -25,6 +25,7 @@ import org.koshinuke.git.GitHandler;
 import org.koshinuke.git.GitUtil;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
+import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
 import org.koshinuke.util.FileUtil;
@@ -63,9 +64,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void setUp() throws Exception {
 		super.setUp();
 		this.config = new TestConfigurationtProvider().getValue();
+		this.deleteDirs();
 	}
 
-	@Before
 	public void deleteDirs() throws IOException {
 		List<File> dirs = new ArrayList<>();
 		dirs.add(new File("bin", "testInit"));
@@ -142,11 +143,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		File testRepo = this.cloneTestRepo();
 
 		WebResource webResource = this.resource();
-		String responseMsg = webResource
-				.path("dynamic/proj/repo/tree/test/hoge")
-				.accept(MediaType.APPLICATION_JSON_TYPE).get(String.class);
-		System.out.println(responseMsg);
-		assertNotNull(responseMsg);
+		List<NodeModel> list = webResource
+				.path("dynamic/proj/repo/tree/branchbranch")
+				.accept(MediaType.APPLICATION_JSON_TYPE)
+				.get(new GenericType<List<NodeModel>>() {
+				});
+		System.out.println("======================");
+		System.out.println(list);
+		assertNotNull(list);
 	}
 
 }

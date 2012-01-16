@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,17 +22,21 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.git.GitHandler;
 import org.koshinuke.git.GitUtil;
 import org.koshinuke.git.RepositoryHandler;
+import org.koshinuke.git.RevWalkHandler;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -193,23 +198,63 @@ public class RepositoryService {
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
-	protected List<NodeModel> walkRepository(Repository repo, String rev)
+	protected List<NodeModel> walkRepository(final Repository repo, String rev)
 			throws Exception {
-		List<NodeModel> list = new ArrayList<>();
-		ObjectId oid = this.findObject(repo, rev);
-		if (oid != null) {
+		final List<NodeModel> list = new ArrayList<>();
+		try {
+			final String[] context = { rev, "" };
+			final ObjectId oid = this.findObject(repo, context);
+			if (oid != null) {
+				GitUtil.walk(repo, new RevWalkHandler<_>() {
+					@Override
+					public _ handle(RevWalk walk) throws Exception {
+						RevTree rt = walk.parseTree(oid);
+						TreeWalk tw = new TreeWalk(repo);
+						tw.reset(rt);
+						tw.setRecursive(false);
+						if (context[1].isEmpty() == false) {
+							tw.setFilter(PathFilter.create(context[1]));
+						}
+						try {
+							int counter = 0;
+							while (tw.next()) {
+								System.out.printf("%5s %s %s %s %n",
+										tw.isSubtree(), tw.getObjectId(0),
+										tw.getTreeCount(), tw.getPathString());
+								if (tw.isSubtree()) {
+									tw.addTree(tw.getObjectId(0));
+								}
+								if (10 < counter++) {
+									break;
+								}
+							}
+						} finally {
+							tw.release();
+						}
+						return _._;
+					}
+				});
+			}
+		} catch (IOException e) {
+			LOG.log(Level.WARNING, e.getMessage(), e);
+		} catch (Exception e) {
+			throw e;
 		}
 		return list;
 	}
 
-	protected ObjectId findObject(Repository repo, String rev) throws Exception {
+	protected ObjectId findObject(Repository repo, String[] context)
+			throws Exception {
 		ObjectId result = null;
-		Ref ref = repo.getRef(Constants.R_HEADS + rev);
+		Ref ref = this.findRef(repo, context);
 		if (ref == null) {
-			ref = repo.getRef(Constants.R_TAGS + rev);
-		}
-		if (ref == null) {
-			ObjectId oid = ObjectId.fromString(rev);
+			String maybeoid = context[0];
+			int i = maybeoid.indexOf('/');
+			if (0 < i) {
+				context[1] = maybeoid.substring(i + 1);
+				maybeoid = maybeoid.substring(0, i);
+			}
+			ObjectId oid = ObjectId.fromString(maybeoid);
 			if (repo.hasObject(oid)) {
 				result = oid;
 			}
@@ -217,5 +262,25 @@ public class RepositoryService {
 			result = ref.getObjectId();
 		}
 		return result;
+	}
+
+	protected Ref findRef(Repository repo, String[] context) throws Exception {
+		Ref r = this.findRef(GitUtil.getBranches(repo), context);
+		if (r == null) {
+			r = this.findRef(repo.getTags(), context);
+		}
+		return r;
+	}
+
+	protected Ref findRef(Map<String, Ref> refs, String[] context)
+			throws Exception {
+		String rev = context[0];
+		for (String s : refs.keySet()) {
+			if (rev.startsWith(s)) {
+				context[1] = rev.substring(s.length());
+				return refs.get(s);
+			}
+		}
+		return null;
 	}
 }

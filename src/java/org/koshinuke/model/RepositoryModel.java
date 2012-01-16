@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -43,8 +42,8 @@ public class RepositoryModel {
 		GitUtil.walk(from, new RevWalkHandler<_>() {
 			@Override
 			public _ handle(RevWalk walk) throws Exception {
-				this.addNodes(RepositoryModel.this.branches, walk, from
-						.getRefDatabase().getRefs(Constants.R_HEADS));
+				this.addNodes(RepositoryModel.this.branches, walk,
+						GitUtil.getBranches(from));
 				this.addNodes(RepositoryModel.this.tags, walk, from.getTags());
 				return _._;
 			}

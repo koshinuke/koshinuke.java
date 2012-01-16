@@ -12,6 +12,9 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.koshinuke._;
+import org.koshinuke.git.GitUtil;
+import org.koshinuke.git.RevWalkHandler;
 
 /**
  * @author taichi
@@ -30,29 +33,30 @@ public class RepositoryModel {
 	public RepositoryModel() {
 	}
 
-	public RepositoryModel(String host, Repository from) throws IOException {
+	public RepositoryModel(String host, final Repository from) throws Exception {
 		this.host = host;
 
 		File dir = from.getDirectory();
 		this.path = dir.getParentFile().getName() + "/" + dir.getName();
 		this.name = dir.getName();
-		RevWalk walk = new RevWalk(from);
-		try {
-			this.addNodes(this.branches, walk,
-					from.getRefDatabase().getRefs(Constants.R_HEADS));
-			this.addNodes(this.tags, walk, from.getTags());
-		} finally {
-			walk.dispose();
-		}
 
-	}
+		GitUtil.walk(from, new RevWalkHandler<_>() {
+			@Override
+			public _ handle(RevWalk walk) throws Exception {
+				this.addNodes(RepositoryModel.this.branches, walk, from
+						.getRefDatabase().getRefs(Constants.R_HEADS));
+				this.addNodes(RepositoryModel.this.tags, walk, from.getTags());
+				return _._;
+			}
 
-	protected void addNodes(List<NodeModel> list, RevWalk walk,
-			Map<String, Ref> refs) throws IOException {
-		for (String s : refs.keySet()) {
-			RevCommit cmt = walk.parseCommit(refs.get(s).getObjectId());
-			list.add(new NodeModel(s, s, cmt));
-		}
+			void addNodes(List<NodeModel> list, RevWalk walk,
+					Map<String, Ref> refs) throws IOException {
+				for (String s : refs.keySet()) {
+					RevCommit cmt = walk.parseCommit(refs.get(s).getObjectId());
+					list.add(new NodeModel(s, s, cmt));
+				}
+			}
+		});
 	}
 
 	public String getHost() {

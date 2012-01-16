@@ -21,7 +21,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
@@ -30,6 +33,7 @@ import org.koshinuke.git.GitHandler;
 import org.koshinuke.git.GitUtil;
 import org.koshinuke.git.RepositoryHandler;
 import org.koshinuke.model.KoshinukePrincipal;
+import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.RandomUtil;
@@ -167,7 +171,7 @@ public class RepositoryService {
 	@Path("/{project}/{repository}/tree/" + REV_PART)
 	public Response tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,
-			@PathParam("rev") String rev,
+			final @PathParam("rev") String rev,
 			// TODO とりあえず定義。使うのは後で。
 			@QueryParam("offset") String offset,
 			@QueryParam("limit") String limit) throws Exception {
@@ -175,10 +179,43 @@ public class RepositoryService {
 				.resolve(project).resolve(repository);
 
 		if (java.nio.file.Files.exists(path)) {
-			Repository repo = GitUtil.to(path);
-			return Response.ok("hogehoge").build();
+			List<NodeModel> list = GitUtil.handleLocal(path,
+					new RepositoryHandler<List<NodeModel>>() {
+						@Override
+						public List<NodeModel> handle(Repository repo)
+								throws Exception {
+							return RepositoryService.this.walkRepository(repo,
+									rev);
+						}
+					});
+			return Response.ok(list).build();
 		}
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
+	protected List<NodeModel> walkRepository(Repository repo, String rev)
+			throws Exception {
+		List<NodeModel> list = new ArrayList<>();
+		ObjectId oid = this.findObject(repo, rev);
+		if (oid != null) {
+		}
+		return list;
+	}
+
+	protected ObjectId findObject(Repository repo, String rev) throws Exception {
+		ObjectId result = null;
+		Ref ref = repo.getRef(Constants.R_HEADS + rev);
+		if (ref == null) {
+			ref = repo.getRef(Constants.R_TAGS + rev);
+		}
+		if (ref == null) {
+			ObjectId oid = ObjectId.fromString(rev);
+			if (repo.hasObject(oid)) {
+				result = oid;
+			}
+		} else {
+			result = ref.getObjectId();
+		}
+		return result;
+	}
 }

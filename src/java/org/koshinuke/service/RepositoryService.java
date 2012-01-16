@@ -2,7 +2,6 @@ package org.koshinuke.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.DirectoryStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,24 +15,21 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.api.errors.NoMessageException;
-import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
-import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.StringUtils;
+import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
+import org.koshinuke.git.GitHandler;
+import org.koshinuke.git.GitUtil;
+import org.koshinuke.git.RepositoryHandler;
 import org.koshinuke.model.KoshinukePrincipal;
-import org.koshinuke.model.Repository;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.RandomUtil;
@@ -75,7 +71,7 @@ public class RepositoryService {
 				try (DirectoryStream<java.nio.file.Path> kidsStream = java.nio.file.Files
 						.newDirectoryStream(parent)) {
 					for (java.nio.file.Path maybeRepo : kidsStream) {
-						RepositoryModel repo = this.to(maybeRepo.toFile());
+						RepositoryModel repo = this.to(maybeRepo);
 						if (repo != null) {
 							repos.add(repo);
 						}
@@ -86,28 +82,28 @@ public class RepositoryService {
 		return repos;
 	}
 
-	protected RepositoryModel to(File maybeRepo) {
-		FileRepository repo = null;
+	protected RepositoryModel to(java.nio.file.Path maybeRepo) {
 		try {
-			FileRepositoryBuilder builder = new FileRepositoryBuilder();
-			repo = builder.setGitDir(maybeRepo).readEnvironment()
-					.setMustExist(true).build();
-			return new RepositoryModel(this.config.getGitHost(), repo);
+			return GitUtil.handleLocal(maybeRepo,
+					new RepositoryHandler<RepositoryModel>() {
+						@Override
+						public RepositoryModel handle(Repository repo)
+								throws Exception {
+							return new RepositoryModel(
+									RepositoryService.this.config.getGitHost(),
+									repo);
+						}
+					});
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, e.getMessage(), e);
-		} finally {
-			if (repo != null) {
-				repo.close();
-			}
 		}
 		return null;
 	}
 
 	@POST
-	public List<RepositoryModel> init(@Context KoshinukePrincipal p,
+	public Response init(@Context KoshinukePrincipal p,
 			@FormParam("rn") String name, @FormParam("rr") String readme)
 			throws Exception {
-		// TODO 適切にUIが動作していれば発生しないケースにおけるエラー処理
 		if (StringUtils.isEmptyOrNull(name) == false
 				&& StringUtils.isEmptyOrNull(readme) == false) {
 			String[] ary = name.split("/");
@@ -119,45 +115,40 @@ public class RepositoryService {
 					File newrepo = path.toFile();
 					if (newrepo.exists() == false) {
 						this.initRepository(p, readme, newrepo);
+						return Response.status(HttpServletResponse.SC_CREATED)
+								.entity(this.list()).build();
 					}
 				}
 			}
 		}
-		return this.list();
+		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
-	protected void initRepository(KoshinukePrincipal p, String readme,
-			File newrepo) throws MalformedURLException, IOException,
-			NoFilepatternException, NoHeadException, NoMessageException,
-			UnmergedPathException, ConcurrentRefUpdateException,
-			WrongRepositoryStateException, InvalidRemoteException {
+	protected void initRepository(final KoshinukePrincipal p,
+			final String readme, final File newrepo) throws Exception {
 		Git initialized = null;
-		File working = pickWorkingDir(this.config.getWorkingDir());
+		final File working = pickWorkingDir(this.config.getWorkingDir());
 		try {
 			initialized = Git.init().setBare(true).setDirectory(newrepo).call();
-			Git g = null;
-			try {
-				g = Git.cloneRepository()
-						.setURI(newrepo.toURI().toURL().toString())
-						.setDirectory(working).call();
-				File readmeFile = new File(working, "README");
-				Files.write(readme, readmeFile, ReaderWriter.UTF8);
-				g.add().addFilepattern(readmeFile.getName()).call();
-				PersonIdent commiter = this.config.getSystemIdent();
-				PersonIdent author = new PersonIdent(p.getName(), p.getMail(),
-						commiter.getWhen(), commiter.getTimeZone());
-				g.commit().setMessage("initial commit.").setCommitter(commiter)
-						.setAuthor(author).call();
-				g.push().call();
-			} finally {
-				if (g != null) {
-					g.getRepository().close();
+			GitUtil.handleClone(newrepo.toURI(), working, new GitHandler<_>() {
+				@Override
+				public _ handle(Git g) throws Exception {
+					File readmeFile = new File(working, "README");
+					Files.write(readme, readmeFile, ReaderWriter.UTF8);
+					g.add().addFilepattern(readmeFile.getName()).call();
+					PersonIdent commiter = RepositoryService.this.config
+							.getSystemIdent();
+					PersonIdent author = new PersonIdent(p.getName(), p
+							.getMail(), commiter.getWhen(), commiter
+							.getTimeZone());
+					g.commit().setMessage("initial commit.")
+							.setCommitter(commiter).setAuthor(author).call();
+					g.push().call();
+					return _._;
 				}
-			}
+			});
 		} finally {
-			if (initialized != null) {
-				initialized.getRepository().close();
-			}
+			GitUtil.close(initialized);
 			FileUtil.delete(working.getAbsolutePath());
 		}
 	}
@@ -170,24 +161,24 @@ public class RepositoryService {
 		return working.toFile();
 	}
 
-	@GET
-	@Path("/{project}/{repository}")
-	public Repository name(@PathParam("project") String project,
-			@PathParam("repository") String repository) {
-		Repository r = new Repository();
-		r.path = project;
-		r.name = repository;
-		r.branches.add("master");
-		r.branches.add("dev");
-		return r;
-	}
+	static final String REV_PART = "{rev: ([a-zA-Z0-9/-_\\+\\*\\.]|%[0-9a-fA-F]{2})+}";
 
 	@GET
-	@Path("/{project}/{repository}/tree/{branch}")
-	public String tree(@PathParam("project") String project,
+	@Path("/{project}/{repository}/tree/" + REV_PART)
+	public Response tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,
-			@PathParam("branch") String branch) {
+			@PathParam("rev") String rev,
+			// TODO とりあえず定義。使うのは後で。
+			@QueryParam("offset") String offset,
+			@QueryParam("limit") String limit) throws Exception {
+		java.nio.file.Path path = this.config.getRepositoryRootDir()
+				.resolve(project).resolve(repository);
 
-		return project + "--" + repository + "--" + branch;
+		if (java.nio.file.Files.exists(path)) {
+			Repository repo = GitUtil.to(path);
+			return Response.ok("hogehoge").build();
+		}
+		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
+
 }

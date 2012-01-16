@@ -19,9 +19,12 @@ import javax.ws.rs.core.MediaType;
 import org.eclipse.jgit.api.Git;
 import org.junit.Before;
 import org.junit.Test;
+import org.koshinuke._;
+import org.koshinuke.conf.Configuration;
+import org.koshinuke.git.GitHandler;
+import org.koshinuke.git.GitUtil;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
-import org.koshinuke.model.Repository;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
 import org.koshinuke.util.FileUtil;
@@ -37,7 +40,7 @@ import com.sun.jersey.core.util.ReaderWriter;
  */
 public class RepositoryServiceTest extends KoshinukeTest {
 
-	RepositoryService target;
+	Configuration config;
 
 	public static class AP extends Application {
 		@Override
@@ -59,16 +62,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		this.target = new RepositoryService();
-		this.target.config = new TestConfigurationtProvider().getValue();
+		this.config = new TestConfigurationtProvider().getValue();
 	}
 
 	@Before
 	public void deleteDirs() throws IOException {
 		List<File> dirs = new ArrayList<>();
 		dirs.add(new File("bin", "testInit"));
-		dirs.add(this.target.config.getRepositoryRootDir().toFile()
-				.getParentFile());
+		dirs.add(this.config.getRepositoryRootDir().toFile().getParentFile());
 		for (File p : dirs) {
 			FileUtil.delete(p.getAbsolutePath());
 		}
@@ -85,7 +86,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 	@Test
 	public void testInit() throws Exception {
-		File dest = new File("bin", "testInit");
+		final File dest = new File("bin", "testInit");
 		final String readme = "readme text";
 		final String path = "test/init";
 		Form form = new Form();
@@ -106,44 +107,46 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertEquals(1, rm.getBranches().size());
 		assertEquals("master", rm.getBranches().get(0).getName());
 
-		Path repo = this.target.config.getRepositoryRootDir().resolve(path);
+		Path repo = this.config.getRepositoryRootDir().resolve(path);
 		assertTrue(Files.exists(repo));
 
-		Git g = null;
-		try {
-			g = Git.cloneRepository().setURI(repo.toUri().toString())
-					.setDirectory(dest).call();
-			File R = new File(dest, "README");
-			assertTrue(R.exists());
+		GitUtil.handleClone(repo.toUri(), dest, new GitHandler<_>() {
+			@Override
+			public _ handle(Git g) throws Exception {
+				File R = new File(dest, "README");
+				assertTrue(R.exists());
 
-			String destText = Resources.toString(R.toURI().toURL(),
-					ReaderWriter.UTF8);
-			assertEquals(readme, destText);
-		} finally {
-			if (g != null) {
-				g.getRepository().close();
+				String destText = Resources.toString(R.toURI().toURL(),
+						ReaderWriter.UTF8);
+				assertEquals(readme, destText);
+				return _._;
 			}
-		}
+		});
+	}
+
+	File cloneTestRepo() throws Exception {
+		Path path = this.config.getRepositoryRootDir().resolve("proj/repo");
+		final File testRepo = path.toFile();
+		return GitUtil.handleClone(new File("test/repo").toPath().toUri(),
+				testRepo, true, new GitHandler<File>() {
+					@Override
+					public File handle(Git git) throws Exception {
+						assertTrue(testRepo.exists());
+						return testRepo;
+					}
+				});
 	}
 
 	@Test
-	public void testService() throws Exception {
+	public void testTree() throws Exception {
+		File testRepo = this.cloneTestRepo();
+
 		WebResource webResource = this.resource();
-		String responseMsg = webResource.path("dynamic/a/b/tree/c")
+		String responseMsg = webResource
+				.path("dynamic/proj/repo/tree/test/hoge")
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(String.class);
+		System.out.println(responseMsg);
 		assertNotNull(responseMsg);
-	}
-
-	@Test
-	public void testName() {
-		Repository r = this.target.name("a", "b");
-		assertEquals(r.path, "a");
-		assertEquals(r.name, "b");
-	}
-
-	@Test
-	public void testTree() {
-		assertNotNull(this.target.tree("a", "b", "c"));
 	}
 
 }

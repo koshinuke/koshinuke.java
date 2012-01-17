@@ -1,5 +1,7 @@
 package org.koshinuke.model;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
@@ -17,12 +19,18 @@ public class NodeModel {
 
 	String author;
 
+	String type;
+
 	public NodeModel() {
 	}
 
-	public NodeModel(String path, String name, RevCommit commit) {
+	public NodeModel(String path, String name) {
 		this.path = path;
 		this.name = name;
+	}
+
+	public NodeModel(String path, String name, RevCommit commit) {
+		this(path, name);
 		this.timestamp = commit.getCommitTime();
 		this.message = commit.getFullMessage();
 		this.author = commit.getAuthorIdent().getName();
@@ -66,6 +74,36 @@ public class NodeModel {
 
 	public void setAuthor(String author) {
 		this.author = author;
+	}
+
+	public String getType() {
+		return this.type;
+	}
+
+	@JsonProperty("type")
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public void setType(int type) {
+		switch (type) {
+		case Constants.OBJ_TREE:
+			this.setType("tree");
+			break;
+		case Constants.OBJ_BLOB:
+			this.setType("blob");
+			break;
+		default:
+			// do nothing
+			break;
+		}
+	}
+
+	@Override
+	public String toString() {
+		return "NodeModel [path=" + this.path + ", name=" + this.name
+				+ ", timestamp=" + this.timestamp + ", message=" + this.message
+				+ ", author=" + this.author + ", type=" + this.type + "]";
 	}
 
 }

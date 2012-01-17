@@ -149,7 +149,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 				.get(new GenericType<List<NodeModel>>() {
 				});
 		System.out.println("======================");
-		System.out.println(list);
+		for (NodeModel nm : list) {
+			System.out.println(nm.getPath());
+		}
 		assertNotNull(list);
 	}
 

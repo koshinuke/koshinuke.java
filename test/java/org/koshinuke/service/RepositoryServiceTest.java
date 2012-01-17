@@ -140,19 +140,40 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 	@Test
 	public void testTree() throws Exception {
-		File testRepo = this.cloneTestRepo();
+		this.cloneTestRepo();
+		this.get(this.resource(), "dynamic/proj/repo/tree/master");
+	}
 
-		WebResource webResource = this.resource();
-		List<NodeModel> list = webResource
-				.path("dynamic/proj/repo/tree/branchbranch")
+	@Test
+	public void testTreeWithParam() throws Exception {
+		this.cloneTestRepo();
+		List<NodeModel> list = this.get(
+				this.resource().queryParam("offset", "1")
+						.queryParam("limit", "4"),
+				"dynamic/proj/repo/tree/branchbranch/");
+		assertEquals(4, list.size());
+	}
+
+	@Test
+	public void testTreeWithContext() throws Exception {
+		this.cloneTestRepo();
+		List<NodeModel> list = this.get(this.resource(),
+				"dynamic/proj/repo/tree/branchbranch/hoge/piyo/");
+		assertEquals(2, list.size());
+	}
+
+	protected List<NodeModel> get(WebResource webResource, String url)
+			throws Exception {
+		List<NodeModel> list = webResource.path(url)
 				.accept(MediaType.APPLICATION_JSON_TYPE)
 				.get(new GenericType<List<NodeModel>>() {
 				});
 		System.out.println("======================");
 		for (NodeModel nm : list) {
-			System.out.println(nm.getPath());
+			System.out.printf("%s %s %n", nm.getChildren(), nm.getPath());
 		}
 		assertNotNull(list);
+		return list;
 	}
 
 }

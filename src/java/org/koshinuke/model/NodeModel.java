@@ -21,6 +21,8 @@ public class NodeModel {
 
 	String type;
 
+	int children;
+
 	public NodeModel() {
 	}
 
@@ -99,11 +101,24 @@ public class NodeModel {
 		}
 	}
 
+	public int getChildren() {
+		return this.children;
+	}
+
+	public void setChildren(int children) {
+		this.children = children;
+	}
+
+	public void addChildren() {
+		this.children++;
+	}
+
 	@Override
 	public String toString() {
 		return "NodeModel [path=" + this.path + ", name=" + this.name
 				+ ", timestamp=" + this.timestamp + ", message=" + this.message
-				+ ", author=" + this.author + ", type=" + this.type + "]";
+				+ ", author=" + this.author + ", type=" + this.type
+				+ ", children=" + this.children + "]";
 	}
 
 }

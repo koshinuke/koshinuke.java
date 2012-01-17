@@ -25,15 +25,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
@@ -181,22 +180,19 @@ public class RepositoryService {
 	public Response tree(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			final @PathParam("rev") String rev,
-			// TODO とりあえず定義。使うのは後で。
-			@QueryParam("offset") String offset,
-			@QueryParam("limit") String limit) throws Exception {
+			@QueryParam("offset") final String offset,
+			@QueryParam("limit") final String limit) throws Exception {
 		java.nio.file.Path path = this.config.getRepositoryRootDir()
 				.resolve(project).resolve(repository);
 
 		if (java.nio.file.Files.exists(path)) {
-			final int oft = to(offset, 0);
-			final int lmt = to(limit, 0xff);
 			List<NodeModel> list = GitUtil.handleLocal(path,
 					new RepositoryHandler<List<NodeModel>>() {
 						@Override
 						public List<NodeModel> handle(Repository repo)
 								throws Exception {
 							return RepositoryService.this.walkRepository(repo,
-									rev, oft, lmt);
+									rev, to(offset, 0), to(limit, 512));
 						}
 					});
 			return Response.ok(list).build();
@@ -215,7 +211,7 @@ public class RepositoryService {
 
 	protected List<NodeModel> walkRepository(final Repository repo, String rev,
 			final int offset, final int limit) throws Exception {
-		final List<NodeModel> list = new ArrayList<>();
+		final List<NodeModel> result = new ArrayList<>();
 		try {
 			final String[] context = { rev, "" };
 			final ObjectId oid = this.findObject(repo, context);
@@ -223,63 +219,9 @@ public class RepositoryService {
 				GitUtil.walk(repo, new RevWalkHandler<_>() {
 					@Override
 					public _ handle(RevWalk walk) throws Exception {
-						RevTree rt = walk.parseTree(oid);
-						TreeWalk tw = new TreeWalk(repo);
-						tw.reset(rt);
-						tw.setRecursive(false);
-						if (context[1].isEmpty() == false) {
-							tw.setFilter(PathFilter.create(context[1]));
-						}
-						class Candidate {
-							ObjectId oid;
-							String name;
-							Candidate parent;
-						}
-						List<Candidate> candidates = new ArrayList<>();
-						Candidate current = null;
-						try {
-							int depth = 0;
-							int l = limit;
-							outer: do {
-								while (tw.next()) {
-									Candidate cand = current;
-									List<String> names = new ArrayList<>();
-									String name = tw.getNameString();
-									names.add(name);
-									while (cand != null) {
-										names.add(cand.name);
-										cand = cand.parent;
-									}
-									Collections.reverse(names);
-
-									list.add(RepositoryService.this.makeModel(
-											walk, names, name,
-											tw.getObjectId(depth)));
-
-									if (tw.isSubtree()) {
-										Candidate c = new Candidate();
-										c.oid = tw.getObjectId(depth);
-										c.parent = current;
-										c.name = tw.getNameString();
-										candidates.add(c);
-									}
-
-									if (l-- < 1) {
-										break outer;
-									}
-								}
-								if (0 < candidates.size()) {
-									Candidate c = candidates.remove(0);
-									tw.addTree(c.oid);
-									depth++;
-									current = c;
-								} else {
-									current = null;
-								}
-							} while (current != null);
-						} finally {
-							tw.release();
-						}
+						List<NodeModel> list = RepositoryService.this.walkTree(
+								walk, repo, oid, context, offset, limit);
+						result.addAll(list);
 						return _._;
 					}
 				});
@@ -289,23 +231,7 @@ public class RepositoryService {
 		} catch (Exception e) {
 			throw e;
 		}
-		return list;
-	}
-
-	protected NodeModel makeModel(RevWalk walk, List<String> path, String name,
-			ObjectId oid) throws IOException {
-		StringBuilder stb = new StringBuilder();
-		for (Iterator<String> i = path.iterator(); i.hasNext();) {
-			String s = i.next();
-			stb.append(s);
-			if (i.hasNext()) {
-				stb.append('/');
-			}
-		}
-		RevObject obj = walk.parseAny(oid);
-		NodeModel nm = new NodeModel(stb.toString(), name);
-		nm.setType(obj.getType());
-		return nm;
+		return result;
 	}
 
 	protected ObjectId findObject(Repository repo, String[] context)
@@ -342,10 +268,106 @@ public class RepositoryService {
 		String rev = context[0];
 		for (String s : refs.keySet()) {
 			if (rev.startsWith(s)) {
-				context[1] = rev.substring(s.length());
+				if (s.length() < rev.length()) {
+					context[1] = rev.substring(s.length() + 1);
+				}
 				return refs.get(s);
 			}
 		}
 		return null;
+	}
+
+	class Candidate {
+		final ObjectId oid;
+		final String name;
+		final Candidate parent;
+		final NodeModel nm;
+
+		Candidate(ObjectId oid, String name, Candidate parent, NodeModel nm) {
+			this.oid = oid;
+			this.name = name;
+			this.parent = parent;
+			this.nm = nm;
+		}
+	}
+
+	protected List<NodeModel> walkTree(RevWalk walk, Repository repo,
+			ObjectId oid, String[] context, int offset, int limit)
+			throws GitAPIException, IOException {
+		List<NodeModel> list = new ArrayList<>();
+		TreeWalk tw = new TreeWalk(repo);
+		tw.setRecursive(false);
+		String parentPath = context[1];
+		try {
+			tw.reset(walk.parseTree(oid));
+			List<Candidate> candidates = new ArrayList<>();
+			Candidate current = null;
+			int depth = 0;
+			do {
+				while (tw.next()) {
+					if (current != null && current.nm != null) {
+						current.nm.addChildren();
+					}
+					if (0 < offset--) {
+						continue;
+					}
+					if (list.size() < limit) {
+						Candidate cand = current;
+						List<String> names = new ArrayList<>();
+						String name = tw.getNameString();
+						names.add(name);
+						while (cand != null) {
+							names.add(cand.name);
+							cand = cand.parent;
+						}
+						Collections.reverse(names);
+						String path = this.toPath(names);
+						NodeModel nm = RepositoryService.this.makeModel(walk,
+								path, name, tw.getObjectId(depth));
+						if (parentPath.isEmpty()
+								|| parentPath.length() < path.length()
+								&& path.startsWith(parentPath)) {
+							list.add(nm);
+						}
+
+						if (tw.isSubtree()) {
+							candidates.add(new Candidate(tw.getObjectId(depth),
+									tw.getNameString(), current, nm));
+						}
+					}
+				}
+				if (0 < candidates.size()) {
+					Candidate c = candidates.remove(0);
+					tw.addTree(c.oid);
+					depth++;
+					current = c;
+				} else {
+					current = null;
+				}
+			} while (current != null);
+		} finally {
+			tw.release();
+		}
+		return list;
+	}
+
+	protected String toPath(List<String> path) {
+		StringBuilder stb = new StringBuilder();
+		for (Iterator<String> i = path.iterator(); i.hasNext();) {
+			String s = i.next();
+			stb.append(s);
+			if (i.hasNext()) {
+				stb.append('/');
+			}
+		}
+		return stb.toString();
+	}
+
+	protected NodeModel makeModel(RevWalk walk, String path, String name,
+			ObjectId oid) throws IOException {
+		RevObject obj = walk.parseAny(oid);
+		NodeModel nm = new NodeModel(path, name);
+		nm.setType(obj.getType());
+		return nm;
 	}
 }

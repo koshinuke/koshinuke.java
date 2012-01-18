@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,30 +27,40 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevTag;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
-import org.koshinuke.git.GitHandler;
-import org.koshinuke.git.GitUtil;
-import org.koshinuke.git.RepositoryHandler;
-import org.koshinuke.git.RevWalkHandler;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.FileUtil;
+import org.koshinuke.util.GitUtil;
+import org.koshinuke.util.IORuntimeException;
 import org.koshinuke.util.RandomUtil;
 import org.koshinuke.util.ServletUtil;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.io.Files;
+import com.google.common.io.NullOutputStream;
 import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.core.util.ReaderWriter;
 import com.sun.jersey.spi.resource.Singleton;
 
 /**
@@ -97,16 +108,15 @@ public class RepositoryService {
 	protected RepositoryModel to(java.nio.file.Path maybeRepo) {
 		try {
 			return GitUtil.handleLocal(maybeRepo,
-					new RepositoryHandler<RepositoryModel>() {
+					new Function<Repository, RepositoryModel>() {
 						@Override
-						public RepositoryModel handle(Repository repo)
-								throws Exception {
+						public RepositoryModel apply(Repository repo) {
 							return new RepositoryModel(
 									RepositoryService.this.config.getGitHost(),
 									repo);
 						}
 					});
-		} catch (Exception e) {
+		} catch (IORuntimeException e) {
 			LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return null;
@@ -137,28 +147,39 @@ public class RepositoryService {
 	}
 
 	protected void initRepository(final KoshinukePrincipal p,
-			final String readme, final File newrepo) throws Exception {
+			final String readme, final File newrepo) {
 		Git initialized = null;
 		final File working = pickWorkingDir(this.config.getWorkingDir());
 		try {
 			initialized = Git.init().setBare(true).setDirectory(newrepo).call();
-			GitUtil.handleClone(newrepo.toURI(), working, new GitHandler<_>() {
-				@Override
-				public _ handle(Git g) throws Exception {
-					File readmeFile = new File(working, "README");
-					Files.write(readme, readmeFile, ReaderWriter.UTF8);
-					g.add().addFilepattern(readmeFile.getName()).call();
-					PersonIdent commiter = RepositoryService.this.config
-							.getSystemIdent();
-					PersonIdent author = new PersonIdent(p.getName(), p
-							.getMail(), commiter.getWhen(), commiter
-							.getTimeZone());
-					g.commit().setMessage("initial commit.")
-							.setCommitter(commiter).setAuthor(author).call();
-					g.push().call();
-					return _._;
-				}
-			});
+			GitUtil.handleClone(newrepo.toURI(), working,
+					new Function<Git, _>() {
+						@Override
+						public _ apply(Git g) {
+							try {
+								// TODO config or input ?
+								File readmeFile = new File(working, "README");
+								Files.write(readme, readmeFile, Charsets.UTF_8);
+								g.add().addFilepattern(readmeFile.getName())
+										.call();
+								PersonIdent commiter = RepositoryService.this.config
+										.getSystemIdent();
+								PersonIdent author = new PersonIdent(p
+										.getName(), p.getMail(), commiter
+										.getWhen(), commiter.getTimeZone());
+								// TODO config or input ?
+								g.commit().setMessage("initial commit.")
+										.setCommitter(commiter)
+										.setAuthor(author).call();
+								g.push().call();
+							} catch (IOException e) {
+								throw new IORuntimeException(e);
+							} catch (GitAPIException e) {
+								throw new IllegalStateException(e);
+							}
+							return _._;
+						}
+					});
 		} finally {
 			GitUtil.close(initialized);
 			FileUtil.delete(working.getAbsolutePath());
@@ -181,16 +202,16 @@ public class RepositoryService {
 			@PathParam("repository") String repository,
 			final @PathParam("rev") String rev,
 			@QueryParam("offset") final String offset,
-			@QueryParam("limit") final String limit) throws Exception {
+			// TODO config ?
+			@QueryParam("limit") final String limit) {
 		java.nio.file.Path path = this.config.getRepositoryRootDir()
 				.resolve(project).resolve(repository);
 
 		if (java.nio.file.Files.exists(path)) {
 			List<NodeModel> list = GitUtil.handleLocal(path,
-					new RepositoryHandler<List<NodeModel>>() {
+					new Function<Repository, List<NodeModel>>() {
 						@Override
-						public List<NodeModel> handle(Repository repo)
-								throws Exception {
+						public List<NodeModel> apply(Repository repo) {
 							return RepositoryService.this.walkRepository(repo,
 									rev, to(offset, 0), to(limit, 512));
 						}
@@ -210,32 +231,33 @@ public class RepositoryService {
 	}
 
 	protected List<NodeModel> walkRepository(final Repository repo, String rev,
-			final int offset, final int limit) throws Exception {
-		final List<NodeModel> result = new ArrayList<>();
+			final int offset, final int limit) {
 		try {
 			final String[] context = { rev, "" };
 			final ObjectId oid = this.findObject(repo, context);
 			if (oid != null) {
-				GitUtil.walk(repo, new RevWalkHandler<_>() {
-					@Override
-					public _ handle(RevWalk walk) throws Exception {
-						List<NodeModel> list = RepositoryService.this.walkTree(
-								walk, repo, oid, context, offset, limit);
-						result.addAll(list);
-						return _._;
-					}
-				});
+				return GitUtil.walk(repo,
+						new Function<RevWalk, List<NodeModel>>() {
+							@Override
+							public List<NodeModel> apply(RevWalk walk) {
+								Map<String, NodeModel> map = RepositoryService.this
+										.walkTree(walk, repo, oid, context,
+												offset, limit);
+								if (0 < map.size()) {
+									return RepositoryService.this.walkCommits(
+											walk, repo, oid, map);
+								}
+								return Collections.emptyList();
+							}
+						});
 			}
-		} catch (IOException e) {
+		} catch (IORuntimeException e) {
 			LOG.log(Level.WARNING, e.getMessage(), e);
-		} catch (Exception e) {
-			throw e;
 		}
-		return result;
+		return Collections.emptyList();
 	}
 
-	protected ObjectId findObject(Repository repo, String[] context)
-			throws Exception {
+	protected ObjectId findObject(Repository repo, String[] context) {
 		ObjectId result = null;
 		Ref ref = this.findRef(repo, context);
 		if (ref == null) {
@@ -245,9 +267,22 @@ public class RepositoryService {
 				context[1] = maybeoid.substring(i + 1);
 				maybeoid = maybeoid.substring(0, i);
 			}
-			ObjectId oid = ObjectId.fromString(maybeoid);
-			if (repo.hasObject(oid)) {
-				result = oid;
+			if (maybeoid.length() == Constants.OBJECT_ID_STRING_LENGTH) {
+				ObjectId oid = ObjectId.fromString(maybeoid);
+				ObjectLoader ol = null;
+				try {
+					ol = repo.open(oid);
+					switch (ol.getType()) {
+					case Constants.OBJ_COMMIT:
+					case Constants.OBJ_TAG:
+						result = oid;
+						break;
+					default:
+						break;
+					}
+				} catch (IOException e) {
+					// do nothing.
+				}
 			}
 		} else {
 			result = ref.getObjectId();
@@ -255,7 +290,7 @@ public class RepositoryService {
 		return result;
 	}
 
-	protected Ref findRef(Repository repo, String[] context) throws Exception {
+	protected Ref findRef(Repository repo, String[] context) {
 		Ref r = this.findRef(GitUtil.getBranches(repo), context);
 		if (r == null) {
 			r = this.findRef(repo.getTags(), context);
@@ -263,8 +298,7 @@ public class RepositoryService {
 		return r;
 	}
 
-	protected Ref findRef(Map<String, Ref> refs, String[] context)
-			throws Exception {
+	protected Ref findRef(Map<String, Ref> refs, String[] context) {
 		String rev = context[0];
 		for (String s : refs.keySet()) {
 			if (rev.startsWith(s)) {
@@ -291,10 +325,9 @@ public class RepositoryService {
 		}
 	}
 
-	protected List<NodeModel> walkTree(RevWalk walk, Repository repo,
-			ObjectId oid, String[] context, int offset, int limit)
-			throws GitAPIException, IOException {
-		List<NodeModel> list = new ArrayList<>();
+	protected Map<String, NodeModel> walkTree(RevWalk walk, Repository repo,
+			ObjectId oid, String[] context, int offset, int limit) {
+		Map<String, NodeModel> result = new HashMap<>();
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setRecursive(false);
 		String parentPath = context[1];
@@ -308,10 +341,7 @@ public class RepositoryService {
 					if (current != null && current.nm != null) {
 						current.nm.addChildren();
 					}
-					if (0 < offset--) {
-						continue;
-					}
-					if (list.size() < limit) {
+					if (result.size() < limit) {
 						Candidate cand = current;
 						List<String> names = new ArrayList<>();
 						String name = tw.getNameString();
@@ -322,15 +352,17 @@ public class RepositoryService {
 						}
 						Collections.reverse(names);
 						String path = this.toPath(names);
-						NodeModel nm = RepositoryService.this.makeModel(walk,
-								path, name, tw.getObjectId(depth));
-						if (parentPath.isEmpty()
-								|| parentPath.length() < path.length()
-								&& path.startsWith(parentPath)) {
-							list.add(nm);
-						}
+						NodeModel nm = this.makeModel(walk, path, name,
+								tw.getObjectId(depth));
 
-						if (tw.isSubtree()) {
+						boolean startsWith = parentPath.isEmpty()
+								|| parentPath.length() < path.length()
+								&& path.startsWith(parentPath);
+						if ((offset < 1 || 0 < offset--) && startsWith) {
+							result.put(path, nm);
+						}
+						if (tw.isSubtree()
+								&& (startsWith || parentPath.startsWith(path))) {
 							candidates.add(new Candidate(tw.getObjectId(depth),
 									tw.getNameString(), current, nm));
 						}
@@ -345,10 +377,12 @@ public class RepositoryService {
 					current = null;
 				}
 			} while (current != null);
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
 		} finally {
 			tw.release();
 		}
-		return list;
+		return result;
 	}
 
 	protected String toPath(List<String> path) {
@@ -364,10 +398,102 @@ public class RepositoryService {
 	}
 
 	protected NodeModel makeModel(RevWalk walk, String path, String name,
-			ObjectId oid) throws IOException {
-		RevObject obj = walk.parseAny(oid);
-		NodeModel nm = new NodeModel(path, name);
-		nm.setType(obj.getType());
+			ObjectId oid) {
+		try {
+			NodeModel nm = new NodeModel(path, name);
+			nm.setObject(walk.parseAny(oid));
+			return nm;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	protected List<NodeModel> walkCommits(RevWalk walk, Repository repo,
+			ObjectId objectId, Map<String, NodeModel> map) {
+		List<NodeModel> result = new ArrayList<>(map.size());
+		try {
+			RevObject ro = walk.parseAny(objectId);
+			RevCommit commit = null;
+			if (ro.getType() == Constants.OBJ_TAG) {
+				RevTag tag = walk.lookupTag(ro);
+				commit = walk.lookupCommit(tag.getObject());
+			} else if (ro.getType() == Constants.OBJ_COMMIT) {
+				commit = walk.lookupCommit(objectId);
+			} else {
+				throw new IllegalStateException();
+			}
+			walk.reset();
+			walk.markStart(commit);
+
+			List<PathFilter> filters = new ArrayList<>();
+			for (Iterator<String> i = map.keySet().iterator(); i.hasNext();) {
+				String path = i.next();
+				NodeModel nm = map.get(path);
+				if (nm.getObject().getType() == Constants.OBJ_BLOB) {
+					filters.add(PathFilter.create(path));
+				} else {
+					i.remove();
+					result.add(nm);
+				}
+			}
+			TreeFilter tf = PathFilterGroup.create(filters);
+			walk.setTreeFilter(tf);
+			// see. org.eclipse.jgit.diff.DiffConfig
+			DiffFormatter diffFmt = new DiffFormatter(new NullOutputStream());
+			diffFmt.setRepository(repo);
+			diffFmt.setPathFilter(tf);
+
+			outer: for (RevCommit rc : walk) {
+				final RevTree now = rc.getTree();
+				if (0 < rc.getParentCount()) {
+					final RevTree pre = rc.getParent(0).getTree();
+					for (DiffEntry de : diffFmt.scan(now, pre)) {
+						NodeModel nm = this.remove(map, de.getNewPath(),
+								de.getOldPath());
+						this.setLastCommit(result, rc, nm);
+						if (map.isEmpty()) {
+							break outer;
+						}
+					}
+				} else {
+					TreeWalk tw = new TreeWalk(repo);
+					tw.reset(rc.getTree());
+					tw.setRecursive(true);
+					try {
+						while (tw.next()) {
+							String path = tw.getPathString();
+							NodeModel nm = map.remove(path);
+							this.setLastCommit(result, rc, nm);
+							if (map.isEmpty()) {
+								break outer;
+							}
+						}
+					} finally {
+						tw.release();
+					}
+				}
+			}
+
+			return result;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	protected void setLastCommit(List<NodeModel> result, RevCommit rc,
+			NodeModel nm) {
+		if (nm != null) {
+			nm.setLastCommit(rc);
+			result.add(nm);
+		}
+	}
+
+	protected NodeModel remove(Map<String, NodeModel> diffCand, String l,
+			String r) {
+		NodeModel nm = diffCand.remove(l);
+		if (nm == null) {
+			nm = diffCand.remove(r);
+		}
 		return nm;
 	}
 }

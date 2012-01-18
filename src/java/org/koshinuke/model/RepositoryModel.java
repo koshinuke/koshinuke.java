@@ -12,8 +12,10 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.koshinuke._;
-import org.koshinuke.git.GitUtil;
-import org.koshinuke.git.RevWalkHandler;
+import org.koshinuke.util.GitUtil;
+import org.koshinuke.util.IORuntimeException;
+
+import com.google.common.base.Function;
 
 /**
  * @author taichi
@@ -32,19 +34,24 @@ public class RepositoryModel {
 	public RepositoryModel() {
 	}
 
-	public RepositoryModel(String host, final Repository from) throws Exception {
+	public RepositoryModel(String host, final Repository from) {
 		this.host = host;
 
 		File dir = from.getDirectory();
 		this.path = dir.getParentFile().getName() + "/" + dir.getName();
 		this.name = dir.getName();
 
-		GitUtil.walk(from, new RevWalkHandler<_>() {
+		GitUtil.walk(from, new Function<RevWalk, _>() {
 			@Override
-			public _ handle(RevWalk walk) throws Exception {
-				this.addNodes(RepositoryModel.this.branches, walk,
-						GitUtil.getBranches(from));
-				this.addNodes(RepositoryModel.this.tags, walk, from.getTags());
+			public _ apply(RevWalk walk) {
+				try {
+					this.addNodes(RepositoryModel.this.branches, walk,
+							GitUtil.getBranches(from));
+					this.addNodes(RepositoryModel.this.tags, walk,
+							from.getTags());
+				} catch (IOException e) {
+					throw new IORuntimeException(e);
+				}
 				return _._;
 			}
 
@@ -52,7 +59,9 @@ public class RepositoryModel {
 					Map<String, Ref> refs) throws IOException {
 				for (String s : refs.keySet()) {
 					RevCommit cmt = walk.parseCommit(refs.get(s).getObjectId());
-					list.add(new NodeModel(s, s, cmt));
+					NodeModel nm = new NodeModel(s, s);
+					nm.setLastCommit(cmt);
+					list.add(nm);
 				}
 			}
 		});

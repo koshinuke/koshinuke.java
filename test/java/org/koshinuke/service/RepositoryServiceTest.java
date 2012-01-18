@@ -1,6 +1,7 @@
 package org.koshinuke.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -9,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,20 +24,20 @@ import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
-import org.koshinuke.git.GitHandler;
-import org.koshinuke.git.GitUtil;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
 import org.koshinuke.util.FileUtil;
+import org.koshinuke.util.GitUtil;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.io.Resources;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.representation.Form;
-import com.sun.jersey.core.util.ReaderWriter;
 
 /**
  * @author taichi
@@ -111,15 +114,19 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		Path repo = this.config.getRepositoryRootDir().resolve(path);
 		assertTrue(Files.exists(repo));
 
-		GitUtil.handleClone(repo.toUri(), dest, new GitHandler<_>() {
+		GitUtil.handleClone(repo.toUri(), dest, new Function<Git, _>() {
 			@Override
-			public _ handle(Git g) throws Exception {
-				File R = new File(dest, "README");
-				assertTrue(R.exists());
+			public _ apply(Git g) {
+				try {
+					File R = new File(dest, "README");
+					assertTrue(R.exists());
 
-				String destText = Resources.toString(R.toURI().toURL(),
-						ReaderWriter.UTF8);
-				assertEquals(readme, destText);
+					String destText = Resources.toString(R.toURI().toURL(),
+							Charsets.UTF_8);
+					assertEquals(readme, destText);
+				} catch (IOException e) {
+					throw new AssertionError(e);
+				}
 				return _._;
 			}
 		});
@@ -129,9 +136,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		Path path = this.config.getRepositoryRootDir().resolve("proj/repo");
 		final File testRepo = path.toFile();
 		return GitUtil.handleClone(new File("test/repo").toPath().toUri(),
-				testRepo, true, new GitHandler<File>() {
+				testRepo, true, new Function<Git, File>() {
 					@Override
-					public File handle(Git git) throws Exception {
+					public File apply(Git git) {
 						assertTrue(testRepo.exists());
 						return testRepo;
 					}
@@ -147,19 +154,43 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testTreeWithParam() throws Exception {
 		this.cloneTestRepo();
-		List<NodeModel> list = this.get(
-				this.resource().queryParam("offset", "1")
+		List<NodeModel> list = this
+				.get(this.resource().queryParam("offset", "1")
 						.queryParam("limit", "4"),
-				"dynamic/proj/repo/tree/branchbranch/");
+						"dynamic/proj/repo/tree/c6fd8c14ca1829007ca60ebf6a221a76ab28b111/");
 		assertEquals(4, list.size());
+		assertEquals(0, list.get(1).getTimestamp());
+		assertEquals(1, list.get(1).getChildren());
+		assertEquals(0, list.get(2).getTimestamp());
+		assertEquals(2, list.get(2).getChildren());
 	}
 
 	@Test
 	public void testTreeWithContext() throws Exception {
 		this.cloneTestRepo();
 		List<NodeModel> list = this.get(this.resource(),
-				"dynamic/proj/repo/tree/branchbranch/hoge/piyo/");
+				"dynamic/proj/repo/tree/branchbranch/moge/");
+		assertEquals(3, list.size());
+
+		list = this.get(this.resource(),
+				"dynamic/proj/repo/tree/branchbranch/hoge/piyo");
 		assertEquals(2, list.size());
+		assertFalse(0 == list.get(0).getTimestamp());
+		assertEquals(0, list.get(0).getChildren());
+
+	}
+
+	@Test
+	public void testTreeWithTag() throws Exception {
+		this.cloneTestRepo();
+		List<NodeModel> list = this.get(this.resource(),
+				"dynamic/proj/repo/tree/0.0.1");
+		assertEquals(4, list.size());
+
+		list = this
+				.get(this.resource(),
+						"dynamic/proj/repo/tree/d45c9a25daec8ea4bd52ff33f45cfdc8b97dce63");
+		assertEquals(4, list.size());
 	}
 
 	protected List<NodeModel> get(WebResource webResource, String url)
@@ -169,10 +200,17 @@ public class RepositoryServiceTest extends KoshinukeTest {
 				.get(new GenericType<List<NodeModel>>() {
 				});
 		System.out.println("======================");
-		for (NodeModel nm : list) {
-			System.out.printf("%s %s %n", nm.getChildren(), nm.getPath());
-		}
 		assertNotNull(list);
+		Collections.sort(list, new Comparator<NodeModel>() {
+			@Override
+			public int compare(NodeModel l, NodeModel r) {
+				return l.getPath().compareTo(r.getPath());
+			}
+		});
+		for (NodeModel nm : list) {
+			System.out.printf("%s %10s %s %n", nm.getChildren(),
+					nm.getTimestamp(), nm.getPath(), nm.getMessage());
+		}
 		return list;
 	}
 

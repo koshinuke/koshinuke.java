@@ -1,13 +1,17 @@
 package org.koshinuke.model;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevObject;
 
 /**
  * @author taichi
  */
 public class NodeModel {
+
+	@JsonIgnore
+	RevObject object;
 
 	String path;
 
@@ -31,8 +35,29 @@ public class NodeModel {
 		this.name = name;
 	}
 
-	public NodeModel(String path, String name, RevCommit commit) {
-		this(path, name);
+	@JsonIgnore
+	public RevObject getObject() {
+		return this.object;
+	}
+
+	@JsonIgnore
+	public void setObject(RevObject object) {
+		this.object = object;
+		switch (object.getType()) {
+		case Constants.OBJ_TREE:
+			this.setType("tree");
+			break;
+		case Constants.OBJ_BLOB:
+			this.setType("blob");
+			break;
+		default:
+			// do nothing
+			break;
+		}
+	}
+
+	@JsonIgnore
+	public void setLastCommit(RevCommit commit) {
 		this.timestamp = commit.getCommitTime();
 		this.message = commit.getFullMessage();
 		this.author = commit.getAuthorIdent().getName();
@@ -82,23 +107,8 @@ public class NodeModel {
 		return this.type;
 	}
 
-	@JsonProperty("type")
 	public void setType(String type) {
 		this.type = type;
-	}
-
-	public void setType(int type) {
-		switch (type) {
-		case Constants.OBJ_TREE:
-			this.setType("tree");
-			break;
-		case Constants.OBJ_BLOB:
-			this.setType("blob");
-			break;
-		default:
-			// do nothing
-			break;
-		}
 	}
 
 	public int getChildren() {

@@ -14,6 +14,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.koshinuke._;
 import org.koshinuke.util.GitUtil;
 import org.koshinuke.util.IORuntimeException;
+import org.koshinuke.util.ServletUtil;
 
 import com.google.common.base.Function;
 
@@ -59,6 +60,7 @@ public class RepositoryModel {
 					Map<String, Ref> refs) throws IOException {
 				for (String s : refs.keySet()) {
 					RevCommit cmt = walk.parseCommit(refs.get(s).getObjectId());
+					s = ServletUtil.encode(s);
 					NodeModel nm = new NodeModel(s, s);
 					nm.setLastCommit(cmt);
 					list.add(nm);

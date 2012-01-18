@@ -1,3 +1,4 @@
+// -Xms40m -Xmx4096m -Dfile.encoding=UTF-8
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
@@ -156,9 +157,9 @@ task testrepo {
 			g.tag().setName("0.0.2").setMessage("TAG tag tag....").call();
 
 			g.checkout().setCreateBranch(true).setName("branchbranch").call();
-			addFile("hoge/piyo/piyo.txt", "pppppp");
-			addFile("hoge/piyo/mogemoge.conf", ".....iiiiiiii");
-			g.commit().setMessage("commit 2 files").setAuthor("one_monster", "one@koshinuke.org").call();
+			addFile("hoge/piyo/piyo.txt", "ぎゃっぱぎゃっぱ");
+			addFile("hoge/piyo/mogemoge.conf", "%% \"-+''");
+			g.commit().setMessage("すげぇの足した。1+1 = 2").setAuthor("one_monster", "one@koshinuke.org").call();
 		} finally {
 			g.getRepository().close();
 		}

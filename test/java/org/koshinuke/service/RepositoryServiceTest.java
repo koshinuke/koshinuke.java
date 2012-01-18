@@ -203,7 +203,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 			}
 		});
 		for (NodeModel nm : list) {
-			System.out.printf("%s %10s %s %n", nm.getChildren(),
+			System.out.printf("%s %10s %s %s %n", nm.getChildren(),
 					nm.getTimestamp(), nm.getPath(), nm.getMessage());
 		}
 		return list;

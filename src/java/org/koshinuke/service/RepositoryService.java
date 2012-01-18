@@ -97,4 +97,20 @@ public class RepositoryService {
 			return Response.ok(list).build();
 		}
 	}
+
+	@GET
+	@Path("/{project}/{repository}/blob/" + REV_PART)
+	public Response blob(@PathParam("project") String project,
+			@PathParam("repository") String repository,
+			@PathParam("rev") String rev) {
+		return null;
+	}
+
+	@POST
+	@Path("/{project}/{repository}/blob/" + REV_PART)
+	public Response commit(@PathParam("project") String project,
+			@PathParam("repository") String repository,
+			@PathParam("rev") String rev) {
+		return null;
+	}
 }

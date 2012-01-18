@@ -2,13 +2,12 @@ package org.koshinuke.model;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 
 /**
  * @author taichi
  */
-public class NodeModel {
+public class NodeModel extends BasicGitModel {
 
 	@JsonIgnore
 	RevObject object;
@@ -16,12 +15,6 @@ public class NodeModel {
 	String path;
 
 	String name;
-
-	int timestamp;
-
-	String message;
-
-	String author;
 
 	String type;
 
@@ -56,13 +49,6 @@ public class NodeModel {
 		}
 	}
 
-	@JsonIgnore
-	public void setLastCommit(RevCommit commit) {
-		this.timestamp = commit.getCommitTime();
-		this.message = commit.getFullMessage();
-		this.author = commit.getAuthorIdent().getName();
-	}
-
 	public String getPath() {
 		return this.path;
 	}
@@ -77,30 +63,6 @@ public class NodeModel {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public int getTimestamp() {
-		return this.timestamp;
-	}
-
-	public void setTimestamp(int timestamp) {
-		this.timestamp = timestamp;
-	}
-
-	public String getMessage() {
-		return this.message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public String getAuthor() {
-		return this.author;
-	}
-
-	public void setAuthor(String author) {
-		this.author = author;
 	}
 
 	public String getType() {
@@ -121,14 +83,6 @@ public class NodeModel {
 
 	public void addChildren() {
 		this.children++;
-	}
-
-	@Override
-	public String toString() {
-		return "NodeModel [path=" + this.path + ", name=" + this.name
-				+ ", timestamp=" + this.timestamp + ", message=" + this.message
-				+ ", author=" + this.author + ", type=" + this.type
-				+ ", children=" + this.children + "]";
 	}
 
 }

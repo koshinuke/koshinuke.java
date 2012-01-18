@@ -154,10 +154,10 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testTreeWithParam() throws Exception {
 		this.cloneTestRepo();
-		List<NodeModel> list = this
-				.get(this.resource().queryParam("offset", "1")
+		List<NodeModel> list = this.get(
+				this.resource().queryParam("offset", "1")
 						.queryParam("limit", "4"),
-						"dynamic/proj/repo/tree/c6fd8c14ca1829007ca60ebf6a221a76ab28b111/");
+				"dynamic/proj/repo/tree/branchbranch/");
 		assertEquals(4, list.size());
 		assertEquals(0, list.get(1).getTimestamp());
 		assertEquals(1, list.get(1).getChildren());
@@ -185,11 +185,6 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		this.cloneTestRepo();
 		List<NodeModel> list = this.get(this.resource(),
 				"dynamic/proj/repo/tree/0.0.1");
-		assertEquals(4, list.size());
-
-		list = this
-				.get(this.resource(),
-						"dynamic/proj/repo/tree/d45c9a25daec8ea4bd52ff33f45cfdc8b97dce63");
 		assertEquals(4, list.size());
 	}
 

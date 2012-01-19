@@ -2,6 +2,7 @@ package org.koshinuke.logic;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -45,6 +47,7 @@ import org.koshinuke.util.RandomUtil;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.NullOutputStream;
 
@@ -353,16 +356,7 @@ public class GitDelegate {
 			ObjectId objectId, String root, Map<String, NodeModel> map) {
 		List<NodeModel> result = new ArrayList<>(map.size());
 		try {
-			RevObject ro = walk.parseAny(objectId);
-			RevCommit commit = null;
-			if (ro.getType() == Constants.OBJ_TAG) {
-				RevTag tag = walk.lookupTag(ro);
-				commit = walk.lookupCommit(tag.getObject());
-			} else if (ro.getType() == Constants.OBJ_COMMIT) {
-				commit = walk.lookupCommit(objectId);
-			} else {
-				throw new IllegalStateException();
-			}
+			RevCommit commit = this.parseCommit(walk, objectId);
 			walk.reset();
 			walk.markStart(commit);
 
@@ -379,10 +373,7 @@ public class GitDelegate {
 			}
 			TreeFilter tf = PathFilterGroup.create(filters);
 			walk.setTreeFilter(tf);
-			// see. org.eclipse.jgit.diff.DiffConfig
-			DiffFormatter diffFmt = new DiffFormatter(new NullOutputStream());
-			diffFmt.setRepository(repo);
-			diffFmt.setPathFilter(tf);
+			DiffFormatter diffFmt = this.makeDiffFormatter(repo, tf);
 
 			outer: for (RevCommit rc : walk) {
 				final RevTree now = rc.getTree();
@@ -421,6 +412,29 @@ public class GitDelegate {
 		}
 	}
 
+	protected RevCommit parseCommit(RevWalk walk, ObjectId objectId)
+			throws MissingObjectException, IOException {
+		RevObject ro = walk.parseAny(objectId);
+		RevCommit commit = null;
+		if (ro.getType() == Constants.OBJ_TAG) {
+			RevTag tag = walk.lookupTag(ro);
+			commit = walk.lookupCommit(tag.getObject());
+		} else if (ro.getType() == Constants.OBJ_COMMIT) {
+			commit = walk.lookupCommit(objectId);
+		} else {
+			throw new IllegalStateException();
+		}
+		return commit;
+	}
+
+	protected DiffFormatter makeDiffFormatter(Repository repo, TreeFilter tf) {
+		// see. org.eclipse.jgit.diff.DiffConfig
+		DiffFormatter diffFmt = new DiffFormatter(new NullOutputStream());
+		diffFmt.setRepository(repo);
+		diffFmt.setPathFilter(tf);
+		return diffFmt;
+	}
+
 	protected NodeModel remove(Map<String, NodeModel> diffCand, String l,
 			String r) {
 		NodeModel nm = diffCand.remove(l);
@@ -451,14 +465,104 @@ public class GitDelegate {
 					new Function<Repository, BlobModel>() {
 						@Override
 						public BlobModel apply(Repository repo) {
-							return GitDelegate.this.findRepository(repo, rev);
+							return GitDelegate.this.findBlob(repo, rev);
 						}
 					});
 		}
 		return null;
 	}
 
-	protected BlobModel findRepository(Repository repo, String rev) {
+	protected BlobModel findBlob(final Repository repo, String rev) {
+		try {
+			final WalkingContext context = new WalkingContext(rev);
+			final ObjectId oid = this.findRootObject(repo, context);
+			if (oid != null) {
+				return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
+					@Override
+					public BlobModel apply(RevWalk walk) {
+						BlobModel bm = GitDelegate.this.findBlob(walk, repo,
+								oid, context);
+						if (bm != null) {
+							GitDelegate.this.walkCommits(walk, repo, oid,
+									context, bm);
+						}
+						return bm;
+					}
+				});
+			}
+		} catch (IORuntimeException e) {
+			LOG.log(Level.WARNING, e.getMessage(), e);
+		}
 		return null;
+	}
+
+	protected BlobModel findBlob(RevWalk walk, Repository repo, ObjectId oid,
+			WalkingContext context) {
+		TreeWalk tw = new TreeWalk(repo);
+		tw.setRecursive(true);
+		try {
+			tw.reset(walk.parseTree(oid));
+			tw.setFilter(PathFilter.create(context.resource));
+			if (tw.next()) {
+				ObjectId o = tw.getObjectId(0);
+				ObjectLoader ol = tw.getObjectReader().open(o,
+						Constants.OBJ_BLOB);
+				try (InputStream in = ol.openStream()) {
+					byte[] bytes = ByteStreams.toByteArray(in);
+					BlobModel bm = new BlobModel();
+					bm.setCommitId(o);
+					// TODO from config? see. com.ibm.icu.text.CharsetDetector
+					// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
+					bm.setContents(new String(bytes, Charsets.UTF_8));
+					return bm;
+				}
+			}
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		} finally {
+			tw.release();
+		}
+		return null;
+	}
+
+	protected void walkCommits(RevWalk walk, Repository repo, ObjectId oid,
+			WalkingContext context, BlobModel bm) {
+		try {
+			RevCommit commit = this.parseCommit(walk, oid);
+			walk.reset();
+			walk.markStart(commit);
+			TreeFilter tf = PathFilter.create(context.resource);
+			walk.setTreeFilter(tf);
+			DiffFormatter diffFmt = this.makeDiffFormatter(repo, tf);
+			outer: for (RevCommit rc : walk) {
+				final RevTree now = rc.getTree();
+				if (0 < rc.getParentCount()) {
+					final RevTree pre = rc.getParent(0).getTree();
+					for (DiffEntry de : diffFmt.scan(now, pre)) {
+						if (context.resource.equals(de.getNewPath())
+								|| context.resource.equals(de.getOldPath())) {
+							bm.setLastCommit(rc);
+							break outer;
+						}
+					}
+				} else {
+					TreeWalk tw = new TreeWalk(repo);
+					tw.reset(rc.getTree());
+					tw.setRecursive(true);
+					try {
+						while (tw.next()) {
+							if (context.resource.equals(tw.getPathString())) {
+								bm.setLastCommit(rc);
+								break outer;
+							}
+						}
+					} finally {
+						tw.release();
+					}
+				}
+			}
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
 	}
 }

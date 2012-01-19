@@ -26,6 +26,7 @@ import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
+import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
@@ -209,4 +210,23 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		return list;
 	}
 
+	@Test
+	public void testBlob() throws Exception {
+		this.cloneTestRepo();
+		BlobModel bm = this.resource()
+				.path("/dynamic/proj/repo/blob/master/README")
+				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
+		assertNotNull(bm);
+		assertEquals("readme readme", bm.getContents());
+		assertEquals("initial commit", bm.getMessage());
+
+		bm = this.resource()
+				.path("/dynamic/proj/repo/blob/test/hoge/hoge/moge/piro.txt")
+				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
+		assertNotNull(bm);
+		assertEquals("gyappa gyappa", bm.getContents());
+		assertEquals("gyawawa", bm.getMessage());
+		assertEquals("monster1", bm.getAuthor());
+
+	}
 }

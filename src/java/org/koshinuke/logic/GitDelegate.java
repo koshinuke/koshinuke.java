@@ -34,6 +34,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
+import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -182,8 +183,8 @@ public class GitDelegate {
 	protected List<NodeModel> walkRepository(final Repository repo, String rev,
 			final int offset, final int limit) {
 		try {
-			final String[] context = { rev, "", "" };
-			final ObjectId oid = this.findObject(repo, context);
+			final WalkingContext context = new WalkingContext(rev);
+			final ObjectId oid = this.findRootObject(repo, context);
 			if (oid != null) {
 				return GitUtil.walk(repo,
 						new Function<RevWalk, List<NodeModel>>() {
@@ -194,7 +195,7 @@ public class GitDelegate {
 												offset, limit);
 								if (0 < map.size()) {
 									return GitDelegate.this.walkCommits(walk,
-											repo, oid, context[1], map);
+											repo, oid, context.root, map);
 								}
 								return Collections.emptyList();
 							}
@@ -206,16 +207,16 @@ public class GitDelegate {
 		return Collections.emptyList();
 	}
 
-	protected ObjectId findObject(Repository repo, String[] context) {
+	protected ObjectId findRootObject(Repository repo, WalkingContext context) {
 		ObjectId result = null;
 		Ref ref = this.findRef(repo, context);
 		if (ref == null) {
-			String maybeoid = context[0];
+			String maybeoid = context.rev;
 			int i = maybeoid.indexOf('/');
 			if (0 < i) {
 				maybeoid = maybeoid.substring(0, i);
-				context[1] = maybeoid;
-				context[2] = maybeoid.substring(i + 1);
+				context.root = maybeoid;
+				context.resource = maybeoid.substring(i + 1);
 			}
 			if (maybeoid.length() == Constants.OBJECT_ID_STRING_LENGTH) {
 				ObjectId oid = ObjectId.fromString(maybeoid);
@@ -231,6 +232,7 @@ public class GitDelegate {
 					}
 				} catch (IOException e) {
 					// do nothing.
+					LOG.log(Level.WARNING, e.getMessage(), e);
 				}
 			}
 		} else {
@@ -239,7 +241,7 @@ public class GitDelegate {
 		return result;
 	}
 
-	protected Ref findRef(Repository repo, String[] context) {
+	protected Ref findRef(Repository repo, WalkingContext context) {
 		Ref r = this.findRef(GitUtil.getBranches(repo), context);
 		if (r == null) {
 			r = this.findRef(repo.getTags(), context);
@@ -247,13 +249,13 @@ public class GitDelegate {
 		return r;
 	}
 
-	protected Ref findRef(Map<String, Ref> refs, String[] context) {
-		String rev = context[0];
+	protected Ref findRef(Map<String, Ref> refs, WalkingContext context) {
+		String rev = context.rev;
 		for (String s : refs.keySet()) {
 			if (rev.startsWith(s)) {
-				context[1] = s;
+				context.root = s;
 				if (s.length() < rev.length()) {
-					context[2] = rev.substring(s.length() + 1);
+					context.resource = rev.substring(s.length() + 1);
 				}
 				return refs.get(s);
 			}
@@ -261,30 +263,16 @@ public class GitDelegate {
 		return null;
 	}
 
-	class Candidate {
-		final ObjectId oid;
-		final String name;
-		final Candidate parent;
-		final NodeModel nm;
-
-		Candidate(ObjectId oid, String name, Candidate parent, NodeModel nm) {
-			this.oid = oid;
-			this.name = name;
-			this.parent = parent;
-			this.nm = nm;
-		}
-	}
-
 	protected Map<String, NodeModel> walkTree(RevWalk walk, Repository repo,
-			ObjectId oid, String[] context, int offset, int limit) {
+			ObjectId oid, WalkingContext context, int offset, int limit) {
 		Map<String, NodeModel> result = new HashMap<>();
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setRecursive(false);
-		String parentPath = context[2];
+		String parentPath = context.resource;
 		try {
 			tw.reset(walk.parseTree(oid));
-			List<Candidate> candidates = new ArrayList<>();
-			Candidate current = null;
+			List<WalkingCandidate> candidates = new ArrayList<>();
+			WalkingCandidate current = null;
 			int depth = 0;
 			do {
 				while (tw.next()) {
@@ -292,7 +280,7 @@ public class GitDelegate {
 						current.nm.addChildren();
 					}
 					if (result.size() < limit) {
-						Candidate cand = current;
+						WalkingCandidate cand = current;
 						List<String> names = new ArrayList<>();
 						String name = tw.getNameString();
 						names.add(name);
@@ -313,13 +301,14 @@ public class GitDelegate {
 						}
 						if (tw.isSubtree()
 								&& (startsWith || parentPath.startsWith(path))) {
-							candidates.add(new Candidate(tw.getObjectId(depth),
-									tw.getNameString(), current, nm));
+							candidates.add(new WalkingCandidate(tw
+									.getObjectId(depth), tw.getNameString(),
+									current, nm));
 						}
 					}
 				}
 				if (0 < candidates.size()) {
-					Candidate c = candidates.remove(0);
+					WalkingCandidate c = candidates.remove(0);
 					tw.addTree(c.oid);
 					depth++;
 					current = c;
@@ -452,5 +441,24 @@ public class GitDelegate {
 	protected void addResult(List<NodeModel> result, NodeModel nm, String root) {
 		nm.setPath(root + "/" + nm.getPath());
 		result.add(nm);
+	}
+
+	public BlobModel getBlob(String project, String repository, final String rev) {
+		Path path = this.config.getRepositoryRootDir().resolve(project)
+				.resolve(repository);
+		if (java.nio.file.Files.exists(path)) {
+			return GitUtil.handleLocal(path,
+					new Function<Repository, BlobModel>() {
+						@Override
+						public BlobModel apply(Repository repo) {
+							return GitDelegate.this.findRepository(repo, rev);
+						}
+					});
+		}
+		return null;
+	}
+
+	protected BlobModel findRepository(Repository repo, String rev) {
+		return null;
 	}
 }

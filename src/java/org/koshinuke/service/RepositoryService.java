@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.logic.GitDelegate;
+import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -103,7 +104,11 @@ public class RepositoryService {
 	public Response blob(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("rev") String rev) {
-		return null;
+		BlobModel blob = this.git.getBlob(project, repository, rev);
+		if (blob == null) {
+			return Response.noContent().build();
+		}
+		return Response.ok(blob).build();
 	}
 
 	@POST

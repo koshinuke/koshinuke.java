@@ -1,8 +1,12 @@
 package org.koshinuke.model;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.annotate.JsonDeserialize;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevObject;
+import org.koshinuke.jackson.URLdecodingDeserializer;
+import org.koshinuke.jackson.URLencodingSerializer;
 
 /**
  * @author taichi
@@ -12,8 +16,12 @@ public class NodeModel extends BasicGitModel {
 	@JsonIgnore
 	RevObject object;
 
+	@JsonSerialize(using = URLencodingSerializer.class)
+	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	String path;
 
+	@JsonSerialize(using = URLencodingSerializer.class)
+	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	String name;
 
 	String type;

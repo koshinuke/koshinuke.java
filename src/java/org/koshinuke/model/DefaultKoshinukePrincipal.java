@@ -6,7 +6,8 @@ import java.security.Principal;
 /**
  * @author taichi
  */
-public class DefaultKoshinukePrincipal implements KoshinukePrincipal, Serializable {
+public class DefaultKoshinukePrincipal implements KoshinukePrincipal,
+		Serializable {
 
 	private static final long serialVersionUID = 6756819198900957569L;
 
@@ -15,7 +16,7 @@ public class DefaultKoshinukePrincipal implements KoshinukePrincipal, Serializab
 
 	public DefaultKoshinukePrincipal(Principal principal) {
 		this.name = principal.getName();
-		this.mail = ""; // TODO
+		this.mail = ""; // TODO ユーザ属性情報をどうやって確保するか…
 	}
 
 	public DefaultKoshinukePrincipal(String name, String mail) {

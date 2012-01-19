@@ -1,9 +1,6 @@
 package org.koshinuke.util;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -44,19 +41,4 @@ public class ServletUtil {
 				&& client.equals(session.getId());
 	}
 
-	public static String encode(String str) {
-		try {
-			return URLEncoder.encode(str, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public static String decode(String encoded) {
-		try {
-			return URLDecoder.decode(encoded, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 }

@@ -41,7 +41,6 @@ import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.GitUtil;
 import org.koshinuke.util.IORuntimeException;
 import org.koshinuke.util.RandomUtil;
-import org.koshinuke.util.ServletUtil;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -351,7 +350,7 @@ public class GitDelegate {
 	protected NodeModel makeModel(RevWalk walk, String path, String name,
 			ObjectId oid) {
 		try {
-			NodeModel nm = new NodeModel(path, ServletUtil.encode(name));
+			NodeModel nm = new NodeModel(path, name);
 			nm.setObject(walk.parseAny(oid));
 			return nm;
 		} catch (IOException e) {
@@ -451,7 +450,7 @@ public class GitDelegate {
 	}
 
 	protected void addResult(List<NodeModel> result, NodeModel nm, String root) {
-		nm.setPath(ServletUtil.encode(root + "/" + nm.getPath()));
+		nm.setPath(root + "/" + nm.getPath());
 		result.add(nm);
 	}
 }

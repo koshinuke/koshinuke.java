@@ -2,9 +2,13 @@ package org.koshinuke.model;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.annotate.JsonDeserialize;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.util.StringUtils;
+import org.koshinuke.jackson.URLdecodingDeserializer;
+import org.koshinuke.jackson.URLencodingSerializer;
 
 /**
  * @author taichi
@@ -14,6 +18,8 @@ public class BlobModel extends BasicGitModel {
 	@JsonIgnore
 	ObjectId commitId;
 
+	@JsonSerialize(using = URLencodingSerializer.class)
+	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	String contents;
 
 	public BlobModel() {

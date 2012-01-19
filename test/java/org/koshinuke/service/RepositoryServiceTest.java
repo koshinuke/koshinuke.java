@@ -184,7 +184,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testTreeWithTag() throws Exception {
 		this.cloneTestRepo();
 		List<NodeModel> list = this.get(this.resource(),
-				"dynamic/proj/repo/tree/0.0.1");
+				"dynamic/proj/repo/tree/beta/0.0.1");
 		assertEquals(4, list.size());
 	}
 

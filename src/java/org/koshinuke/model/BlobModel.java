@@ -12,36 +12,42 @@ import org.eclipse.jgit.util.StringUtils;
 public class BlobModel extends BasicGitModel {
 
 	@JsonIgnore
-	ObjectId commitId;
+	ObjectId objectid;
 
 	String contents;
 
 	public BlobModel() {
 	}
 
-	@JsonIgnore
-	public ObjectId getCommitId() {
-		return this.commitId;
+	public BlobModel(BlobModel src) {
+		super(src);
+		this.objectid = src.objectid;
+		this.contents = src.contents;
 	}
 
 	@JsonIgnore
-	public void setCommitId(ObjectId commitId) {
-		this.commitId = commitId;
+	public void setRawObjectId(ObjectId objectid) {
+		this.objectid = objectid;
 	}
 
-	@JsonProperty("commit")
-	public String getCommit() {
-		if (this.commitId == null) {
+	@JsonIgnore
+	public ObjectId getRawObjectId() {
+		return this.objectid;
+	}
+
+	@JsonProperty("objectid")
+	public String getObjectId() {
+		if (this.objectid == null) {
 			return ObjectId.zeroId().name();
 		}
-		return this.commitId.name();
+		return this.objectid.name();
 	}
 
-	@JsonProperty("commit")
-	public void setCommit(String commit) {
-		if (StringUtils.isEmptyOrNull(commit) == false
-				&& commit.length() == Constants.OBJECT_ID_STRING_LENGTH) {
-			this.commitId = ObjectId.fromString(commit);
+	@JsonProperty("objectid")
+	public void setObjectId(String objectid) {
+		if (StringUtils.isEmptyOrNull(objectid) == false
+				&& objectid.length() == Constants.OBJECT_ID_STRING_LENGTH) {
+			this.objectid = ObjectId.fromString(objectid);
 		}
 	}
 
@@ -52,5 +58,4 @@ public class BlobModel extends BasicGitModel {
 	public void setContents(String contents) {
 		this.contents = contents;
 	}
-
 }

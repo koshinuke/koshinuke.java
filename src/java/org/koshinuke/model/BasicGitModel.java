@@ -17,6 +17,12 @@ public class BasicGitModel {
 	public BasicGitModel() {
 	}
 
+	public BasicGitModel(BasicGitModel src) {
+		this.timestamp = src.timestamp;
+		this.message = src.message;
+		this.author = src.author;
+	}
+
 	@JsonIgnore
 	public void setLastCommit(RevCommit commit) {
 		this.timestamp = commit.getCommitTime();

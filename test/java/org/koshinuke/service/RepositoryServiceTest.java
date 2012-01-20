@@ -3,6 +3,7 @@ package org.koshinuke.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -228,5 +229,28 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertEquals("gyawawa", bm.getMessage());
 		assertEquals("monster1", bm.getAuthor());
 
+	}
+
+	@Test
+	public void testModifyBlob() throws Exception {
+		this.cloneTestRepo();
+		String path = "/dynamic/proj/repo/blob/master/README";
+		BlobModel bm = this.resource().path(path)
+				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
+		assertNotNull(bm);
+
+		BlobModel newone = new BlobModel(bm);
+		newone.setMessage("modifiy!!");
+		newone.setContents(bm.getContents() + "\nhogehoge");
+
+		BlobModel modified = this.resource().path(path)
+				.accept(MediaType.APPLICATION_JSON)
+				.entity(newone, MediaType.APPLICATION_JSON)
+				.post(BlobModel.class);
+		assertNotNull(modified);
+
+		assertNotSame(bm.getTimestamp(), modified.getTimestamp());
+		assertEquals(newone.getMessage(), modified.getMessage());
+		assertEquals(newone.getContents(), modified.getContents());
 	}
 }

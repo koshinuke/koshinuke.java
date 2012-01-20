@@ -115,10 +115,12 @@ public class RepositoryService {
 	@POST
 	@Path("/{project}/{repository}/blob/" + REV_PART)
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response commit(@PathParam("project") String project,
+	public Response commit(@Context KoshinukePrincipal p,
+			@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("rev") String rev, BlobModel input) {
-		BlobModel blob = this.git.modifyBlob(project, repository, rev, input);
+		BlobModel blob = this.git
+				.modifyBlob(p, project, repository, rev, input);
 		if (blob == null) {
 			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 		}

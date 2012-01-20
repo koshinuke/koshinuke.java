@@ -140,9 +140,8 @@ public class GitDelegate {
 										.call();
 								PersonIdent commiter = GitDelegate.this.config
 										.getSystemIdent();
-								PersonIdent author = new PersonIdent(p
-										.getName(), p.getMail(), commiter
-										.getWhen(), commiter.getTimeZone());
+								PersonIdent author = GitDelegate.this
+										.makeAuthorIdent(p, commiter);
 								// TODO config or input ?
 								g.commit().setMessage("initial commit.")
 										.setCommitter(commiter)
@@ -516,7 +515,7 @@ public class GitDelegate {
 					// クライアント側に対してリソースが大きすぎる事を通知した上で、再リクエストしてもらう仕組みを作りこむ。
 					byte[] bytes = ByteStreams.toByteArray(in);
 					BlobModel bm = new BlobModel();
-					bm.setCommitId(o);
+					bm.setRawObjectId(o);
 
 					StringBuilder stb = this.toDataScheme(context.resource);
 					if (stb == null) {
@@ -596,8 +595,110 @@ public class GitDelegate {
 		}
 	}
 
-	public BlobModel modifyBlob(String project, String repository, String rev,
-			BlobModel input) {
+	public BlobModel modifyBlob(final KoshinukePrincipal p, String project,
+			String repository, final String rev, final BlobModel input) {
+		Path path = this.config.getRepositoryRootDir().resolve(project)
+				.resolve(repository);
+		if (java.nio.file.Files.exists(path)) {
+			return GitUtil.handleLocal(path,
+					new Function<Repository, BlobModel>() {
+						@Override
+						public BlobModel apply(Repository repo) {
+							return GitDelegate.this.findBlob(p, repo, rev,
+									input);
+						}
+					});
+		}
 		return null;
+	}
+
+	protected BlobModel findBlob(final KoshinukePrincipal p,
+			final Repository repo, final String rev, final BlobModel input) {
+		try {
+			final WalkingContext context = new WalkingContext(rev);
+			final ObjectId oid = this.findRootObject(repo, context);
+			if (oid != null) {
+				return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
+					@Override
+					public BlobModel apply(RevWalk walk) {
+						return GitDelegate.this.modifyBlob(p, walk, repo, oid,
+								context, input);
+					}
+				});
+			}
+		} catch (IORuntimeException e) {
+			LOG.log(Level.WARNING, e.getMessage(), e);
+		}
+		return null;
+	}
+
+	protected BlobModel modifyBlob(KoshinukePrincipal p, RevWalk walk,
+			Repository repo, ObjectId oid, WalkingContext context,
+			BlobModel input) {
+		TreeWalk tw = new TreeWalk(repo);
+		tw.setRecursive(true);
+		try {
+			tw.reset(walk.parseTree(oid));
+			tw.setFilter(PathFilter.create(context.resource));
+			if (tw.next()) {
+				ObjectId o = tw.getObjectId(0);
+				if (o.equals(input.getRawObjectId())) {
+					this.modifyResource(p, repo, context, input);
+					BlobModel bm = this.findBlob(walk, repo, oid, context);
+					if (bm != null) {
+						this.walkCommits(walk, repo, oid, context, bm);
+					}
+					return bm;
+				}
+			}
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		} finally {
+			tw.release();
+		}
+		return null;
+	}
+
+	protected void modifyResource(final KoshinukePrincipal p, Repository repo,
+			final WalkingContext context, final BlobModel input) {
+		final File working = pickWorkingDir(this.config.getWorkingDir());
+		try {
+			GitUtil.handleClone(repo.getDirectory().toURI(), working,
+					new Function<Git, _>() {
+						@Override
+						public _ apply(Git g) {
+							try {
+								g.checkout().setCreateBranch(true)
+										.setName(context.root).call();
+								File file = new File(working, context.resource);
+								Files.write(input.getContents(), file,
+										Charsets.UTF_8);
+								PersonIdent commiter = GitDelegate.this.config
+										.getSystemIdent();
+								PersonIdent author = GitDelegate.this
+										.makeAuthorIdent(p, commiter);
+								g.commit().setMessage(input.getMessage())
+										.setCommitter(commiter)
+										.setAuthor(author).call();
+								g.push().call();
+								return _._;
+							} catch (GitAPIException e) {
+								throw new IllegalStateException(e);
+							} catch (IOException e) {
+								throw new IORuntimeException(e);
+							}
+						}
+					});
+
+		} finally {
+			FileUtil.delete(working.getAbsolutePath());
+		}
+	}
+
+	protected PersonIdent makeAuthorIdent(final KoshinukePrincipal p,
+			PersonIdent commiter) {
+		PersonIdent author = new PersonIdent(p.getName(), p.getMail(),
+				commiter.getWhen(), commiter.getTimeZone());
+		return author;
 	}
 }

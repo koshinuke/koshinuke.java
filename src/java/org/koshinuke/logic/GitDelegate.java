@@ -652,7 +652,11 @@ public class GitDelegate {
 						@Override
 						public _ apply(Git g) {
 							try {
-								g.checkout().setCreateBranch(true)
+								g.checkout()
+										.setCreateBranch(
+												g.getRepository().getRef(
+														Constants.R_HEADS
+																+ context.root) == null)
 										.setStartPoint(commit)
 										.setName(context.root).call();
 								File file = new File(working, context.resource);

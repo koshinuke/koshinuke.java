@@ -1,11 +1,7 @@
 package org.koshinuke.model;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.map.annotate.JsonDeserialize;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.koshinuke.jackson.URLdecodingDeserializer;
-import org.koshinuke.jackson.URLencodingSerializer;
 
 /**
  * @author taichi
@@ -14,12 +10,8 @@ public class BasicGitModel {
 
 	protected int timestamp;
 
-	@JsonSerialize(using = URLencodingSerializer.class)
-	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	protected String message;
 
-	@JsonSerialize(using = URLencodingSerializer.class)
-	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	protected String author;
 
 	public BasicGitModel() {

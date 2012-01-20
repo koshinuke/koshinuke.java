@@ -17,7 +17,8 @@ public class Main {
 	protected static Server start() throws Exception {
 		Server server = new Server(9998);
 		server.setSendServerVersion(false);
-		ServletContextHandler sch = new WebAppContext("src/webapp", "/");
+		WebAppContext sch = new WebAppContext("src/webapp", "/");
+		sch.setDefaultsDescriptor("etc/webdefault.xml");
 		sessionCookieSecured(sch);
 		sch.setAttribute(Configuration.NAME, new File(
 				"etc/koshinuke.properties").toURI().toURL());

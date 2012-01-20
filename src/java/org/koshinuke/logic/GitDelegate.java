@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import net.iharder.Base64;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -508,12 +512,22 @@ public class GitDelegate {
 				ObjectLoader ol = tw.getObjectReader().open(o,
 						Constants.OBJ_BLOB);
 				try (InputStream in = ol.openStream()) {
+					// TODO コンテンツがデカ過ぎる場合、メモリに全部展開してしまうのは良くないので、
+					// クライアント側に対してリソースが大きすぎる事を通知した上で、再リクエストしてもらう仕組みを作りこむ。
 					byte[] bytes = ByteStreams.toByteArray(in);
 					BlobModel bm = new BlobModel();
 					bm.setCommitId(o);
-					// TODO from config? see. com.ibm.icu.text.CharsetDetector
-					// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
-					bm.setContents(new String(bytes, Charsets.UTF_8));
+
+					StringBuilder stb = this.toDataScheme(context.resource);
+					if (stb == null) {
+						// TODO from config? see.
+						// com.ibm.icu.text.CharsetDetector
+						// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
+						bm.setContents(new String(bytes, Charsets.UTF_8));
+					} else {
+						stb.append(Base64.encodeBytes(bytes));
+						bm.setContents(stb.toString());
+					}
 					return bm;
 				}
 			}
@@ -521,6 +535,22 @@ public class GitDelegate {
 			throw new IORuntimeException(e);
 		} finally {
 			tw.release();
+		}
+		return null;
+	}
+
+	static final Pattern isImages = Pattern.compile(
+			"\\.(jpe?g|gif|png|ico|bmp)$", Pattern.CASE_INSENSITIVE);
+
+	// see. http://tools.ietf.org/html/rfc2397
+	protected StringBuilder toDataScheme(String path) {
+		Matcher m = isImages.matcher(path);
+		if (m.find()) {
+			StringBuilder stb = new StringBuilder();
+			stb.append("data:image/");
+			stb.append(m.group(1));
+			stb.append(";base64,");
+			return stb;
 		}
 		return null;
 	}
@@ -564,5 +594,10 @@ public class GitDelegate {
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+	}
+
+	public BlobModel modifyBlob(String project, String repository, String rev,
+			BlobModel input) {
+		return null;
 	}
 }

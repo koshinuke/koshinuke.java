@@ -6,15 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.map.annotate.JsonDeserialize;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.koshinuke._;
-import org.koshinuke.jackson.URLdecodingDeserializer;
-import org.koshinuke.jackson.URLencodingSerializer;
 import org.koshinuke.util.GitUtil;
 import org.koshinuke.util.IORuntimeException;
 
@@ -27,12 +24,8 @@ public class RepositoryModel {
 
 	String host;
 
-	@JsonSerialize(using = URLencodingSerializer.class)
-	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	String path;
 
-	@JsonSerialize(using = URLencodingSerializer.class)
-	@JsonDeserialize(using = URLdecodingDeserializer.class)
 	String name;
 
 	@JsonSerialize(contentAs = NodeModel.class)

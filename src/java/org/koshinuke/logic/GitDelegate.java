@@ -600,39 +600,40 @@ public class GitDelegate {
 		Path path = this.config.getRepositoryRootDir().resolve(project)
 				.resolve(repository);
 		if (java.nio.file.Files.exists(path)) {
-			return GitUtil.handleLocal(path,
-					new Function<Repository, BlobModel>() {
-						@Override
-						public BlobModel apply(Repository repo) {
-							return GitDelegate.this.findBlob(p, repo, rev,
-									input);
-						}
-					});
-		}
-		return null;
-	}
-
-	protected BlobModel findBlob(final KoshinukePrincipal p,
-			final Repository repo, final String rev, final BlobModel input) {
-		try {
-			final WalkingContext context = new WalkingContext(rev);
-			final ObjectId oid = this.findRootObject(repo, context);
-			if (oid != null) {
-				return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
-					@Override
-					public BlobModel apply(RevWalk walk) {
-						return GitDelegate.this.modifyBlob(p, walk, repo, oid,
-								context, input);
-					}
-				});
+			try {
+				return GitUtil.handleLocal(path,
+						new Function<Repository, BlobModel>() {
+							@Override
+							public BlobModel apply(Repository repo) {
+								GitDelegate.this
+										.modifyBlob(p, repo, rev, input);
+								return GitDelegate.this.findBlob(repo, rev);
+							}
+						});
+			} catch (IORuntimeException e) {
+				LOG.log(Level.WARNING, e.getMessage(), e);
 			}
-		} catch (IORuntimeException e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return null;
 	}
 
-	protected BlobModel modifyBlob(KoshinukePrincipal p, RevWalk walk,
+	protected void modifyBlob(final KoshinukePrincipal p,
+			final Repository repo, final String rev, final BlobModel input) {
+		final WalkingContext context = new WalkingContext(rev);
+		final ObjectId oid = this.findRootObject(repo, context);
+		if (oid != null) {
+			GitUtil.walk(repo, new Function<RevWalk, _>() {
+				@Override
+				public _ apply(RevWalk walk) {
+					GitDelegate.this.modifyBlob(p, walk, repo, oid, context,
+							input);
+					return _._;
+				}
+			});
+		}
+	}
+
+	protected void modifyBlob(KoshinukePrincipal p, RevWalk walk,
 			Repository repo, ObjectId oid, WalkingContext context,
 			BlobModel input) {
 		TreeWalk tw = new TreeWalk(repo);
@@ -644,11 +645,6 @@ public class GitDelegate {
 				ObjectId o = tw.getObjectId(0);
 				if (o.equals(input.getRawObjectId())) {
 					this.modifyResource(p, repo, context, input);
-					BlobModel bm = this.findBlob(walk, repo, oid, context);
-					if (bm != null) {
-						this.walkCommits(walk, repo, oid, context, bm);
-					}
-					return bm;
 				}
 			}
 		} catch (IOException e) {
@@ -656,7 +652,6 @@ public class GitDelegate {
 		} finally {
 			tw.release();
 		}
-		return null;
 	}
 
 	protected void modifyResource(final KoshinukePrincipal p, Repository repo,
@@ -673,6 +668,7 @@ public class GitDelegate {
 								File file = new File(working, context.resource);
 								Files.write(input.getContents(), file,
 										Charsets.UTF_8);
+								g.add().addFilepattern(context.resource).call();
 								PersonIdent commiter = GitDelegate.this.config
 										.getSystemIdent();
 								PersonIdent author = GitDelegate.this

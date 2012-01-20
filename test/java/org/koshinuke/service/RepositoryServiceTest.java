@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,11 +34,13 @@ import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
 import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.GitUtil;
+import org.koshinuke.util.ServletUtil;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.io.Resources;
 import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.representation.Form;
 
@@ -234,22 +237,57 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testModifyBlob() throws Exception {
 		this.cloneTestRepo();
-		String path = "/dynamic/proj/repo/blob/master/README";
+		{
+			String path = "/dynamic/proj/repo/blob/master/README";
+			BlobModel bm = this.getBlob(path);
+
+			BlobModel newone = new BlobModel(bm);
+			newone.setMessage("modifiy!!");
+			newone.setContents(bm.getContents() + "\nhogehoge");
+
+			this.testModifyBlob(path, newone);
+		}
+		String path = "/dynamic/proj/repo/blob/test/hoge/hoge/moge/piro.txt";
+		BlobModel bm = this.getBlob(path);
+		BlobModel newone = new BlobModel(bm);
+		newone.setMessage("mod mod");
+		newone.setContents(bm.getContents() + "\nhogehoge");
+
+		this.testModifyBlob(path, newone);
+	}
+
+	@Test
+	public void testModiryErrorBecauseTagCannotModify() throws Exception {
+		this.cloneTestRepo();
+		String path = "/dynamic/proj/repo/blob/beta/0.0.2/myomyo/muga/piyopiyo.txt";
+		BlobModel bm = this.getBlob(path);
+		BlobModel newone = new BlobModel(bm);
+		newone.setMessage("mod mod");
+		newone.setContents(bm.getContents() + "\nhogehoge");
+		try {
+			this.testModifyBlob(path, newone);
+			fail();
+		} catch (UniformInterfaceException e) {
+			assertEquals(ServletUtil.SC_UNPROCESSABLE_ENTITY, e.getResponse()
+					.getStatus());
+		}
+	}
+
+	protected BlobModel getBlob(String path) {
 		BlobModel bm = this.resource().path(path)
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
 		assertNotNull(bm);
+		return bm;
+	}
 
-		BlobModel newone = new BlobModel(bm);
-		newone.setMessage("modifiy!!");
-		newone.setContents(bm.getContents() + "\nhogehoge");
-
+	protected void testModifyBlob(String path, BlobModel newone) {
 		BlobModel modified = this.resource().path(path)
 				.accept(MediaType.APPLICATION_JSON)
 				.entity(newone, MediaType.APPLICATION_JSON)
 				.post(BlobModel.class);
 		assertNotNull(modified);
 
-		assertNotSame(bm.getTimestamp(), modified.getTimestamp());
+		assertNotSame(newone.getTimestamp(), modified.getTimestamp());
 		assertEquals(newone.getMessage(), modified.getMessage());
 		assertEquals(newone.getContents(), modified.getContents());
 	}

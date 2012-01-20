@@ -22,7 +22,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -31,7 +30,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -359,7 +357,7 @@ public class GitDelegate {
 			ObjectId objectId, String root, Map<String, NodeModel> map) {
 		List<NodeModel> result = new ArrayList<>(map.size());
 		try {
-			RevCommit commit = this.parseCommit(walk, objectId);
+			RevCommit commit = walk.parseCommit(objectId);
 			walk.reset();
 			walk.markStart(commit);
 
@@ -413,21 +411,6 @@ public class GitDelegate {
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
-	}
-
-	protected RevCommit parseCommit(RevWalk walk, ObjectId objectId)
-			throws MissingObjectException, IOException {
-		RevObject ro = walk.parseAny(objectId);
-		RevCommit commit = null;
-		if (ro.getType() == Constants.OBJ_TAG) {
-			RevTag tag = walk.lookupTag(ro);
-			commit = walk.lookupCommit(tag.getObject());
-		} else if (ro.getType() == Constants.OBJ_COMMIT) {
-			commit = walk.lookupCommit(objectId);
-		} else {
-			throw new IllegalStateException();
-		}
-		return commit;
 	}
 
 	protected DiffFormatter makeDiffFormatter(Repository repo, TreeFilter tf) {
@@ -557,7 +540,7 @@ public class GitDelegate {
 	protected void walkCommits(RevWalk walk, Repository repo, ObjectId oid,
 			WalkingContext context, BlobModel bm) {
 		try {
-			RevCommit commit = this.parseCommit(walk, oid);
+			RevCommit commit = walk.parseCommit(oid);
 			walk.reset();
 			walk.markStart(commit);
 			TreeFilter tf = PathFilter.create(context.resource);
@@ -605,9 +588,8 @@ public class GitDelegate {
 						new Function<Repository, BlobModel>() {
 							@Override
 							public BlobModel apply(Repository repo) {
-								GitDelegate.this
-										.modifyBlob(p, repo, rev, input);
-								return GitDelegate.this.findBlob(repo, rev);
+								return GitDelegate.this.modifyBlob(p, repo,
+										rev, input);
 							}
 						});
 			} catch (IORuntimeException e) {
@@ -617,45 +599,52 @@ public class GitDelegate {
 		return null;
 	}
 
-	protected void modifyBlob(final KoshinukePrincipal p,
+	protected BlobModel modifyBlob(final KoshinukePrincipal p,
 			final Repository repo, final String rev, final BlobModel input) {
 		final WalkingContext context = new WalkingContext(rev);
 		final ObjectId oid = this.findRootObject(repo, context);
 		if (oid != null) {
-			GitUtil.walk(repo, new Function<RevWalk, _>() {
+			return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
 				@Override
-				public _ apply(RevWalk walk) {
-					GitDelegate.this.modifyBlob(p, walk, repo, oid, context,
-							input);
-					return _._;
+				public BlobModel apply(RevWalk walk) {
+					return GitDelegate.this.modifyBlob(p, walk, repo, oid,
+							context, input);
 				}
 			});
 		}
+		return null;
 	}
 
-	protected void modifyBlob(KoshinukePrincipal p, RevWalk walk,
+	protected BlobModel modifyBlob(KoshinukePrincipal p, RevWalk walk,
 			Repository repo, ObjectId oid, WalkingContext context,
 			BlobModel input) {
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setRecursive(true);
 		try {
-			tw.reset(walk.parseTree(oid));
-			tw.setFilter(PathFilter.create(context.resource));
-			if (tw.next()) {
-				ObjectId o = tw.getObjectId(0);
-				if (o.equals(input.getRawObjectId())) {
-					this.modifyResource(p, repo, context, input);
+			RevObject ro = walk.parseAny(oid);
+			if (ro.getType() == Constants.OBJ_COMMIT) {
+				tw.reset(walk.parseTree(oid));
+				tw.setFilter(PathFilter.create(context.resource));
+				if (tw.next()) {
+					ObjectId o = tw.getObjectId(0);
+					if (o.equals(input.getRawObjectId())) {
+						RevCommit commit = walk.parseCommit(oid);
+						this.modifyResource(p, repo, commit, context, input);
+					}
 				}
+				return GitDelegate.this.findBlob(repo, context.rev);
 			}
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		} finally {
 			tw.release();
 		}
+		return null;
 	}
 
 	protected void modifyResource(final KoshinukePrincipal p, Repository repo,
-			final WalkingContext context, final BlobModel input) {
+			final RevCommit commit, final WalkingContext context,
+			final BlobModel input) {
 		final File working = pickWorkingDir(this.config.getWorkingDir());
 		try {
 			GitUtil.handleClone(repo.getDirectory().toURI(), working,
@@ -664,6 +653,7 @@ public class GitDelegate {
 						public _ apply(Git g) {
 							try {
 								g.checkout().setCreateBranch(true)
+										.setStartPoint(commit)
 										.setName(context.root).call();
 								File file = new File(working, context.resource);
 								Files.write(input.getContents(), file,

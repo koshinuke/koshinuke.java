@@ -119,11 +119,14 @@ public class RepositoryService {
 			@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("rev") String rev, BlobModel input) {
-		BlobModel blob = this.git
-				.modifyBlob(p, project, repository, rev, input);
-		if (blob == null) {
-			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		if (StringUtils.isEmptyOrNull(input.getContents()) == false
+				&& StringUtils.isEmptyOrNull(input.getMessage()) == false) {
+			BlobModel blob = this.git.modifyBlob(p, project, repository, rev,
+					input);
+			if (blob != null) {
+				return Response.ok(blob).build();
+			}
 		}
-		return Response.ok(blob).build();
+		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 }

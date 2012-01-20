@@ -629,10 +629,10 @@ public class GitDelegate {
 					ObjectId o = tw.getObjectId(0);
 					if (o.equals(input.getRawObjectId())) {
 						RevCommit commit = walk.parseCommit(oid);
-						this.modifyResource(p, repo, commit, context, input);
+						return this.modifyResource(p, repo, commit, context,
+								input);
 					}
 				}
-				return GitDelegate.this.findBlob(repo, context.rev);
 			}
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
@@ -642,21 +642,19 @@ public class GitDelegate {
 		return null;
 	}
 
-	protected void modifyResource(final KoshinukePrincipal p, Repository repo,
-			final RevCommit commit, final WalkingContext context,
-			final BlobModel input) {
+	protected BlobModel modifyResource(final KoshinukePrincipal p,
+			Repository repo, final RevCommit commit,
+			final WalkingContext context, final BlobModel input) {
 		final File working = pickWorkingDir(this.config.getWorkingDir());
 		try {
-			GitUtil.handleClone(repo.getDirectory().toURI(), working,
-					new Function<Git, _>() {
+			return GitUtil.handleClone(repo.getDirectory().toURI(), working,
+					new Function<Git, BlobModel>() {
 						@Override
-						public _ apply(Git g) {
+						public BlobModel apply(Git g) {
 							try {
-								g.checkout()
-										.setCreateBranch(
-												g.getRepository().getRef(
-														Constants.R_HEADS
-																+ context.root) == null)
+								boolean create = g.getRepository().getRef(
+										Constants.R_HEADS + context.root) == null;
+								g.checkout().setCreateBranch(create)
 										.setStartPoint(commit)
 										.setName(context.root).call();
 								File file = new File(working, context.resource);
@@ -667,11 +665,13 @@ public class GitDelegate {
 										.getSystemIdent();
 								PersonIdent author = GitDelegate.this
 										.makeAuthorIdent(p, commiter);
-								g.commit().setMessage(input.getMessage())
+								RevCommit commit = g.commit()
+										.setMessage(input.getMessage())
 										.setCommitter(commiter)
 										.setAuthor(author).call();
 								g.push().call();
-								return _._;
+								input.setLastCommit(commit);
+								return input;
 							} catch (GitAPIException e) {
 								throw new IllegalStateException(e);
 							} catch (IOException e) {
@@ -679,7 +679,6 @@ public class GitDelegate {
 							}
 						}
 					});
-
 		} finally {
 			FileUtil.delete(working.getAbsolutePath());
 		}

@@ -39,6 +39,7 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.model.BlobModel;
+import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -689,5 +690,10 @@ public class GitDelegate {
 		PersonIdent author = new PersonIdent(p.getName(), p.getMail(),
 				commiter.getWhen(), commiter.getTimeZone());
 		return author;
+	}
+
+	public List<BranchHistoryModel> getHistories(String project,
+			String repository) {
+		return null; // TODO not implemented.
 	}
 }

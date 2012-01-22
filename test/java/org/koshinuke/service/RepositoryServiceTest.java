@@ -29,6 +29,7 @@ import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.model.BlobModel;
+import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
@@ -290,5 +291,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertNotSame(newone.getTimestamp(), modified.getTimestamp());
 		assertEquals(newone.getMessage(), modified.getMessage());
 		assertEquals(newone.getContents(), modified.getContents());
+	}
+
+	@Test
+	public void testHistories() throws Exception {
+		String path = "/dynamic/proj/repo/history";
+		List<BranchHistoryModel> list = this.resource().path(path)
+				.get(new GenericType<List<BranchHistoryModel>>() {
+				});
+		assertNotNull(list);
 	}
 }

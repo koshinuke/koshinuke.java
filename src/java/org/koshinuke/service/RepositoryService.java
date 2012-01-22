@@ -21,6 +21,7 @@ import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.logic.GitDelegate;
 import org.koshinuke.model.BlobModel;
+import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -128,5 +129,17 @@ public class RepositoryService {
 			}
 		}
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+	}
+
+	@GET
+	@Path("/{project}/{repository}/history")
+	public Response histories(@PathParam("project") String project,
+			@PathParam("repository") String repository) {
+		List<BranchHistoryModel> list = this.git.getHistories(project,
+				repository);
+		if (list == null) {
+			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		}
+		return Response.ok(list).build();
 	}
 }

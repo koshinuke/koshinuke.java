@@ -11,9 +11,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +24,7 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
 import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke._;
@@ -79,6 +82,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void deleteDirs() throws IOException {
 		List<File> dirs = new ArrayList<>();
 		dirs.add(new File("bin", "testInit"));
+		dirs.add(new File("bin", "testHist"));
 		dirs.add(this.config.getRepositoryRootDir().toFile().getParentFile());
 		for (File p : dirs) {
 			FileUtil.delete(p.getAbsolutePath());
@@ -295,10 +299,57 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 	@Test
 	public void testHistories() throws Exception {
+		this.setUpTestHistories(this.cloneTestRepo());
 		String path = "/dynamic/proj/repo/history";
 		List<BranchHistoryModel> list = this.resource().path(path)
 				.get(new GenericType<List<BranchHistoryModel>>() {
 				});
 		assertNotNull(list);
+		for (BranchHistoryModel model : list) {
+			assertTrue(0 != model.getTimestamp());
+			assertEquals(model.getName(), 30, model.getActivities().size());
+			assertEquals(model.getPath(), model.getName());
+			System.out.printf("%12s ", model.getName());
+			for (long[] a : model.getActivities()) {
+				System.out.printf("[%s %s] ", new SimpleDateFormat("MM-dd")
+						.format(new Date(a[0] * 1000)), a[1]);
+			}
+			System.out.println();
+			if (model.getName().equals("test/hoge")) {
+				assertEquals(1, model.getActivities().get(29)[1]);
+			}
+		}
+	}
+
+	protected void setUpTestHistories(final File f) throws Exception {
+		final File working = new File("bin", "testHist");
+		GitUtil.handleClone(f.toURI(), working, new Function<Git, _>() {
+			@Override
+			public _ apply(Git g) {
+				try {
+					String sp = "test/hoge";
+					g.checkout()
+							.setCreateBranch(true)
+							.setName(sp)
+							.setStartPoint(Constants.R_REMOTES + "origin/" + sp)
+							.call();
+					String content = "ぎょぱぎょぱ";
+					String path = "ppp/zzz/gg.txt";
+					File newone = new File(working, path);
+					newone.getParentFile().mkdirs();
+					com.google.common.io.Files.write(content, newone,
+							java.nio.charset.Charset.forName("UTF-8"));
+					g.add().addFilepattern(path).call();
+					g.commit().setMessage("ぎょっわ")
+							.setAuthor("testtest", "testHist@koshinuke.org")
+							.call();
+					g.push().call();
+					return _._;
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		});
+
 	}
 }

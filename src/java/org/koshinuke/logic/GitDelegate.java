@@ -6,7 +6,9 @@ import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -694,6 +696,107 @@ public class GitDelegate {
 
 	public List<BranchHistoryModel> getHistories(String project,
 			String repository) {
-		return null; // TODO not implemented.
+		Path path = this.config.getRepositoryRootDir().resolve(project)
+				.resolve(repository);
+		if (java.nio.file.Files.exists(path)) {
+			try {
+				return GitUtil.handleLocal(path,
+						new Function<Repository, List<BranchHistoryModel>>() {
+							@Override
+							public List<BranchHistoryModel> apply(
+									Repository repo) {
+								return GitDelegate.this
+										.findBranchHistories(repo);
+							}
+						});
+			} catch (IORuntimeException e) {
+				LOG.log(Level.WARNING, e.getMessage(), e);
+			}
+		}
+		return null;
+	}
+
+	protected List<BranchHistoryModel> findBranchHistories(final Repository repo) {
+		List<BranchHistoryModel> result = new ArrayList<>();
+		Map<String, Ref> branches = GitUtil.getBranches(repo);
+		for (String s : branches.keySet()) {
+			final BranchHistoryModel model = new BranchHistoryModel(s);
+			final Ref ref = branches.get(s);
+			List<long[]> activities = GitUtil.walk(repo,
+					new Function<RevWalk, List<long[]>>() {
+						@Override
+						public List<long[]> apply(RevWalk walk) {
+							RevCommit commit = GitDelegate.this.setLastCommit(
+									walk, ref, model);
+							return GitDelegate.this.parseActivities(walk, repo,
+									commit);
+						}
+					});
+			model.setActivities(activities);
+			result.add(model);
+		}
+		Collections.sort(result, new Comparator<BranchHistoryModel>() {
+			@Override
+			public int compare(BranchHistoryModel left, BranchHistoryModel right) {
+				return Integer.compare(right.getTimestamp(),
+						left.getTimestamp());
+			}
+		});
+		return result;
+	}
+
+	protected RevCommit setLastCommit(RevWalk walk, Ref ref,
+			BranchHistoryModel model) {
+		try {
+			ObjectId oid = ref.getObjectId();
+			RevCommit commit = walk.parseCommit(oid);
+			model.setLastCommit(commit);
+			return commit;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	protected List<long[]> parseActivities(RevWalk walk, Repository repo,
+			RevCommit begin) {
+		List<long[]> result = new ArrayList<>(30);
+		try {
+			walk.reset();
+			walk.markStart(begin);
+			Calendar calendar = Calendar.getInstance();
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			class TimeContext {
+				long time;
+				int count;
+			}
+			List<TimeContext> list = new ArrayList<>();
+			for (int i = 0; i < 30; i++) {
+				TimeContext tc = new TimeContext();
+				tc.time = calendar.getTimeInMillis();
+				list.add(tc);
+				calendar.add(Calendar.DATE, -1);
+			}
+
+			for (RevCommit cmt : walk) {
+				PersonIdent author = cmt.getAuthorIdent();
+				long time = author.getWhen().getTime();
+				for (TimeContext tc : list) {
+					if (tc.time < time) {
+						tc.count++;
+						break;
+					}
+				}
+			}
+			Collections.reverse(list);
+			for (TimeContext tc : list) {
+				long[] ary = { tc.time / 1000L, tc.count };
+				result.add(ary);
+			}
+			return result;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
 	}
 }

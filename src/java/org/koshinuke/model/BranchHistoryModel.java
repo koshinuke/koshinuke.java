@@ -13,14 +13,14 @@ public class BranchHistoryModel extends BasicGitModel {
 
 	String name;
 
-	@JsonSerialize(contentAs = String[].class)
-	List<String[]> activities;
+	@JsonSerialize(contentAs = long[].class)
+	List<long[]> activities;
 
 	public BranchHistoryModel() {
 	}
 
-	public BranchHistoryModel(String path, String name) {
-		this.path = path;
+	public BranchHistoryModel(String name) {
+		this.path = name;
 		this.name = name;
 	}
 
@@ -40,11 +40,11 @@ public class BranchHistoryModel extends BasicGitModel {
 		this.name = name;
 	}
 
-	public List<String[]> getActivities() {
+	public List<long[]> getActivities() {
 		return this.activities;
 	}
 
-	public void setActivities(List<String[]> activities) {
+	public void setActivities(List<long[]> activities) {
 		this.activities = activities;
 	}
 

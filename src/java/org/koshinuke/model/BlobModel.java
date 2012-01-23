@@ -12,7 +12,7 @@ import org.eclipse.jgit.util.StringUtils;
 public class BlobModel extends BasicGitModel {
 
 	@JsonIgnore
-	ObjectId objectid;
+	ObjectId objectid = ObjectId.zeroId();
 
 	String contents;
 
@@ -37,9 +37,6 @@ public class BlobModel extends BasicGitModel {
 
 	@JsonProperty("objectid")
 	public String getObjectId() {
-		if (this.objectid == null) {
-			return ObjectId.zeroId().name();
-		}
 		return this.objectid.name();
 	}
 

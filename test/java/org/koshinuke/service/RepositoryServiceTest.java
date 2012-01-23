@@ -33,6 +33,7 @@ import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
+import org.koshinuke.model.CommitModel;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
@@ -350,6 +351,20 @@ public class RepositoryServiceTest extends KoshinukeTest {
 				}
 			}
 		});
+	}
+
+	@Test
+	public void testGetCommits() throws Exception {
+		this.setUpTestHistories(this.cloneTestRepo());
+		String path = "/dynamic/proj/repo/commits/test/moge";
+		List<CommitModel> list = this.resource().path(path)
+				.get(new GenericType<List<CommitModel>>() {
+				});
+		assertNotNull(list);
+		assertEquals(3, list.size());
+		assertEquals("ぐわわ…", list.get(0).getMessage());
+		assertEquals("gyawawa", list.get(1).getMessage());
+		assertEquals("initial commit", list.get(2).getMessage());
 
 	}
 }

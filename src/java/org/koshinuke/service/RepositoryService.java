@@ -22,6 +22,7 @@ import org.koshinuke.conf.Configuration;
 import org.koshinuke.logic.GitDelegate;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
+import org.koshinuke.model.CommitModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -137,6 +138,21 @@ public class RepositoryService {
 			@PathParam("repository") String repository) {
 		List<BranchHistoryModel> list = this.git.getHistories(project,
 				repository);
+		if (list == null) {
+			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		}
+		return Response.ok(list).build();
+	}
+
+	@GET
+	@Path("/{project}/{repository}/commits/" + REV_PART)
+	public Response commits(@PathParam("project") String project,
+			@PathParam("repository") String repository,
+			@PathParam("rev") String rev, @QueryParam("offset") String offset,
+			// TODO config ?
+			@QueryParam("limit") String limit) {
+		List<CommitModel> list = this.git.getCommits(project, repository, rev,
+				offset, to(limit, 128));
 		if (list == null) {
 			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 		}

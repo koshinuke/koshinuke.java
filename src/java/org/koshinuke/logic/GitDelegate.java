@@ -38,10 +38,12 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
+import org.koshinuke.model.CommitModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -172,44 +174,33 @@ public class GitDelegate {
 
 	public List<NodeModel> listRepository(String project, String repository,
 			final String rev, final int offset, final int limit) {
-		Path path = this.config.getRepositoryRootDir().resolve(project)
-				.resolve(repository);
-		if (java.nio.file.Files.exists(path)) {
-			return GitUtil.handleLocal(path,
-					new Function<Repository, List<NodeModel>>() {
-						@Override
-						public List<NodeModel> apply(Repository repo) {
-							return GitDelegate.this.walkRepository(repo, rev,
-									offset, limit);
-						}
-					});
-		}
-		return null;
+		return this.handleLocal(project, repository,
+				new Function<Repository, List<NodeModel>>() {
+					@Override
+					public List<NodeModel> apply(Repository repo) {
+						return GitDelegate.this.walkRepository(repo, rev,
+								offset, limit);
+					}
+				});
 	}
 
 	protected List<NodeModel> walkRepository(final Repository repo, String rev,
 			final int offset, final int limit) {
-		try {
-			final WalkingContext context = new WalkingContext(rev);
-			final ObjectId oid = this.findRootObject(repo, context);
-			if (oid != null) {
-				return GitUtil.walk(repo,
-						new Function<RevWalk, List<NodeModel>>() {
-							@Override
-							public List<NodeModel> apply(RevWalk walk) {
-								Map<String, NodeModel> map = GitDelegate.this
-										.walkTree(walk, repo, oid, context,
-												offset, limit);
-								if (0 < map.size()) {
-									return GitDelegate.this.walkCommits(walk,
-											repo, oid, context.root, map);
-								}
-								return Collections.emptyList();
-							}
-						});
-			}
-		} catch (IORuntimeException e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
+		final WalkingContext context = new WalkingContext(rev);
+		final ObjectId oid = this.findRootObject(repo, context);
+		if (oid != null) {
+			return GitUtil.walk(repo, new Function<RevWalk, List<NodeModel>>() {
+				@Override
+				public List<NodeModel> apply(RevWalk walk) {
+					Map<String, NodeModel> map = GitDelegate.this.walkTree(
+							walk, repo, oid, context, offset, limit);
+					if (0 < map.size()) {
+						return GitDelegate.this.walkCommits(walk, repo, oid,
+								context.root, map);
+					}
+					return Collections.emptyList();
+				}
+			});
 		}
 		return Collections.emptyList();
 	}
@@ -447,40 +438,31 @@ public class GitDelegate {
 	}
 
 	public BlobModel getBlob(String project, String repository, final String rev) {
-		Path path = this.config.getRepositoryRootDir().resolve(project)
-				.resolve(repository);
-		if (java.nio.file.Files.exists(path)) {
-			return GitUtil.handleLocal(path,
-					new Function<Repository, BlobModel>() {
-						@Override
-						public BlobModel apply(Repository repo) {
-							return GitDelegate.this.findBlob(repo, rev);
-						}
-					});
-		}
-		return null;
+		return this.handleLocal(project, repository,
+				new Function<Repository, BlobModel>() {
+					@Override
+					public BlobModel apply(Repository repo) {
+						return GitDelegate.this.findBlob(repo, rev);
+					}
+				});
 	}
 
 	protected BlobModel findBlob(final Repository repo, String rev) {
-		try {
-			final WalkingContext context = new WalkingContext(rev);
-			final ObjectId oid = this.findRootObject(repo, context);
-			if (oid != null) {
-				return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
-					@Override
-					public BlobModel apply(RevWalk walk) {
-						BlobModel bm = GitDelegate.this.findBlob(walk, repo,
-								oid, context);
-						if (bm != null) {
-							GitDelegate.this.walkCommits(walk, repo, oid,
-									context, bm);
-						}
-						return bm;
+		final WalkingContext context = new WalkingContext(rev);
+		final ObjectId oid = this.findRootObject(repo, context);
+		if (oid != null) {
+			return GitUtil.walk(repo, new Function<RevWalk, BlobModel>() {
+				@Override
+				public BlobModel apply(RevWalk walk) {
+					BlobModel bm = GitDelegate.this.findBlob(walk, repo, oid,
+							context);
+					if (bm != null) {
+						GitDelegate.this.walkCommits(walk, repo, oid, context,
+								bm);
 					}
-				});
-			}
-		} catch (IORuntimeException e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
+					return bm;
+				}
+			});
 		}
 		return null;
 	}
@@ -583,23 +565,13 @@ public class GitDelegate {
 
 	public BlobModel modifyBlob(final KoshinukePrincipal p, String project,
 			String repository, final String rev, final BlobModel input) {
-		Path path = this.config.getRepositoryRootDir().resolve(project)
-				.resolve(repository);
-		if (java.nio.file.Files.exists(path)) {
-			try {
-				return GitUtil.handleLocal(path,
-						new Function<Repository, BlobModel>() {
-							@Override
-							public BlobModel apply(Repository repo) {
-								return GitDelegate.this.modifyBlob(p, repo,
-										rev, input);
-							}
-						});
-			} catch (IORuntimeException e) {
-				LOG.log(Level.WARNING, e.getMessage(), e);
-			}
-		}
-		return null;
+		return this.handleLocal(project, repository,
+				new Function<Repository, BlobModel>() {
+					@Override
+					public BlobModel apply(Repository repo) {
+						return GitDelegate.this.modifyBlob(p, repo, rev, input);
+					}
+				});
 	}
 
 	protected BlobModel modifyBlob(final KoshinukePrincipal p,
@@ -696,24 +668,13 @@ public class GitDelegate {
 
 	public List<BranchHistoryModel> getHistories(String project,
 			String repository) {
-		Path path = this.config.getRepositoryRootDir().resolve(project)
-				.resolve(repository);
-		if (java.nio.file.Files.exists(path)) {
-			try {
-				return GitUtil.handleLocal(path,
-						new Function<Repository, List<BranchHistoryModel>>() {
-							@Override
-							public List<BranchHistoryModel> apply(
-									Repository repo) {
-								return GitDelegate.this
-										.findBranchHistories(repo);
-							}
-						});
-			} catch (IORuntimeException e) {
-				LOG.log(Level.WARNING, e.getMessage(), e);
-			}
-		}
-		return null;
+		return this.handleLocal(project, repository,
+				new Function<Repository, List<BranchHistoryModel>>() {
+					@Override
+					public List<BranchHistoryModel> apply(Repository repo) {
+						return GitDelegate.this.findBranchHistories(repo);
+					}
+				});
 	}
 
 	protected List<BranchHistoryModel> findBranchHistories(final Repository repo) {
@@ -793,6 +754,79 @@ public class GitDelegate {
 			for (TimeContext tc : list) {
 				long[] ary = { tc.time / 1000L, tc.count };
 				result.add(ary);
+			}
+			return result;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	protected <T> T handleLocal(String project, String repository,
+			Function<Repository, T> handler) {
+		Path path = this.config.getRepositoryRootDir().resolve(project)
+				.resolve(repository);
+		if (java.nio.file.Files.exists(path)) {
+			try {
+				return GitUtil.handleLocal(path, handler);
+			} catch (IORuntimeException e) {
+				LOG.log(Level.WARNING, e.getMessage(), e);
+			}
+		}
+		return null;
+	}
+
+	public List<CommitModel> getCommits(String project, String repository,
+			final String rev, final String offset, final int limit) {
+		return this.handleLocal(project, repository,
+				new Function<Repository, List<CommitModel>>() {
+					@Override
+					public List<CommitModel> apply(Repository repo) {
+						return GitDelegate.this.parseCommits(repo, rev, offset,
+								limit);
+					}
+				});
+	}
+
+	protected List<CommitModel> parseCommits(final Repository repo, String rev,
+			final String offset, final int limit) {
+		final WalkingContext context = new WalkingContext(rev);
+		final ObjectId oid = this.findRootObject(repo, context);
+		if (oid != null) {
+			return GitUtil.walk(repo,
+					new Function<RevWalk, List<CommitModel>>() {
+						@Override
+						public List<CommitModel> apply(RevWalk walk) {
+							return GitDelegate.this.parseCommits(walk, repo,
+									oid, context, offset, limit);
+						}
+					});
+		}
+
+		return Collections.emptyList();
+	}
+
+	protected List<CommitModel> parseCommits(RevWalk walk, Repository repo,
+			ObjectId oid, WalkingContext context, String offset, int limit) {
+		try {
+			List<CommitModel> result = new ArrayList<>();
+			RevCommit begin = null;
+			if (StringUtils.isEmptyOrNull(offset) == false
+					&& offset.length() == Constants.OBJECT_ID_STRING_LENGTH) {
+				ObjectId offsetId = ObjectId.fromString(offset);
+				begin = walk.parseCommit(offsetId);
+			} else {
+				begin = walk.parseCommit(oid);
+			}
+			walk.reset();
+			walk.markStart(begin);
+			if (StringUtils.isEmptyOrNull(context.resource) == false) {
+				walk.setTreeFilter(PathFilter.create(context.resource));
+			}
+			for (RevCommit rc : walk) {
+				if (limit-- < 1) {
+					break;
+				}
+				result.add(new CommitModel(rc));
 			}
 			return result;
 		} catch (IOException e) {

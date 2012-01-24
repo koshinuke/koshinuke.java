@@ -15,29 +15,32 @@ import org.eclipse.jgit.util.StringUtils;
 /**
  * @author taichi
  */
-public class CommitModel extends BasicGitModel {
+public class DiffModel {
 
 	@JsonIgnore
-	ObjectId commit = ObjectId.zeroId();
+	ObjectId commit;
 
 	@JsonIgnore
-	List<ObjectId> parents = new ArrayList<>();
+	List<ObjectId> parents;
 
-	public CommitModel() {
+	@JsonSerialize(contentAs = DiffEntryModel.class)
+	List<DiffEntryModel> diff;
+
+	public DiffModel() {
 	}
 
-	public CommitModel(RevCommit commit) {
-		this.commit = commit.getId();
-		this.setLastCommit(commit);
+	public DiffModel(RevCommit commit) {
+		this.commit = commit;
+		this.setRawParents(commit.getParents());
 	}
 
 	@JsonIgnore
-	public ObjectId getRawCommitId() {
+	public ObjectId getRawCommit() {
 		return this.commit;
 	}
 
 	@JsonIgnore
-	public void setRawCommitId(ObjectId commit) {
+	public void setRawCommit(ObjectId commit) {
 		this.commit = commit;
 	}
 
@@ -91,4 +94,13 @@ public class CommitModel extends BasicGitModel {
 			}
 		}
 	}
+
+	public List<DiffEntryModel> getDiff() {
+		return this.diff;
+	}
+
+	public void setDiff(List<DiffEntryModel> diff) {
+		this.diff = diff;
+	}
+
 }

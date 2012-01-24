@@ -158,4 +158,12 @@ public class RepositoryService {
 		}
 		return Response.ok(list).build();
 	}
+
+	@GET
+	@Path("/{project}/{repository}/commit/{commitid: [a-zA-Z0-9]{40}}")
+	public Response diff(@PathParam("project") String project,
+			@PathParam("repository") String repository,
+			@PathParam("commitid") String commitid) {
+		return null;
+	}
 }

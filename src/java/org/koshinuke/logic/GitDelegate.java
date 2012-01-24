@@ -813,8 +813,12 @@ public class GitDelegate {
 			if (StringUtils.isEmptyOrNull(offset) == false
 					&& offset.length() == Constants.OBJECT_ID_STRING_LENGTH) {
 				ObjectId offsetId = ObjectId.fromString(offset);
-				begin = walk.parseCommit(offsetId);
-			} else {
+				RevCommit rc = walk.parseCommit(offsetId);
+				if (0 < rc.getParentCount()) {
+					begin = rc.getParent(0);
+				}
+			}
+			if (begin == null) {
 				begin = walk.parseCommit(oid);
 			}
 			walk.reset();

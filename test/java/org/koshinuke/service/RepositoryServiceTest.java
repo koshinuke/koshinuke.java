@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke._;
@@ -37,7 +38,6 @@ import org.koshinuke.model.CommitModel;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
-import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.GitUtil;
 import org.koshinuke.util.ServletUtil;
 
@@ -86,7 +86,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		dirs.add(new File("bin", "testHist"));
 		dirs.add(this.config.getRepositoryRootDir().toFile().getParentFile());
 		for (File p : dirs) {
-			FileUtil.delete(p.getAbsolutePath());
+			FileUtils.delete(p, FileUtils.RECURSIVE | FileUtils.SKIP_MISSING);
 		}
 	}
 

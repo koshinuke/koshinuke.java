@@ -38,6 +38,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
@@ -47,7 +48,6 @@ import org.koshinuke.model.CommitModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
-import org.koshinuke.util.FileUtil;
 import org.koshinuke.util.GitUtil;
 import org.koshinuke.util.IORuntimeException;
 import org.koshinuke.util.RandomUtil;
@@ -160,7 +160,15 @@ public class GitDelegate {
 					});
 		} finally {
 			GitUtil.close(initialized);
-			FileUtil.delete(working.getAbsolutePath());
+
+		}
+	}
+
+	protected void delete(File f) {
+		try {
+			FileUtils.delete(f, FileUtils.RECURSIVE | FileUtils.SKIP_MISSING);
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
 		}
 	}
 
@@ -655,7 +663,7 @@ public class GitDelegate {
 						}
 					});
 		} finally {
-			FileUtil.delete(working.getAbsolutePath());
+			this.delete(working);
 		}
 	}
 

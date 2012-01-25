@@ -8,11 +8,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -23,8 +23,10 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +38,8 @@ import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
+import org.koshinuke.model.DiffEntryModel;
+import org.koshinuke.model.DiffModel;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.test.KoshinukeTest;
@@ -89,12 +93,15 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	}
 
 	public void deleteDirs() throws IOException {
-		List<File> dirs = new ArrayList<>();
-		dirs.add(new File("bin", "testInit"));
-		dirs.add(new File("bin", "testHist"));
-		dirs.add(this.config.getRepositoryRootDir().toFile().getParentFile());
-		for (File p : dirs) {
-			FileUtils.delete(p, FileUtils.RECURSIVE | FileUtils.SKIP_MISSING);
+		File bin = new File("bin");
+		for (File test : bin.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return name.startsWith("test");
+			}
+		})) {
+			FileUtils
+					.delete(test, FileUtils.RECURSIVE | FileUtils.SKIP_MISSING);
 		}
 	}
 
@@ -374,5 +381,75 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertEquals("gyawawa", list.get(1).getMessage());
 		assertEquals("initial commit", list.get(2).getMessage());
 
+	}
+
+	protected String setUpTestDiff(File f) throws Exception {
+		final File working = new File("bin", "testDiff");
+		return GitUtil.handleClone(f.toURI(), working,
+				new Function<Git, String>() {
+					@Override
+					public String apply(Git g) {
+						try {
+							String sp = "test/hoge";
+							g.checkout()
+									.setCreateBranch(true)
+									.setName(sp)
+									.setStartPoint(
+											Constants.R_REMOTES + "origin/"
+													+ sp).call();
+							AddCommand add = g.add();
+							{
+								String content = "ぎょぱぎょぱ";
+								String path = "ppp/zzz/gg.txt";
+								File newone = new File(working, path);
+								newone.getParentFile().mkdirs();
+								com.google.common.io.Files.write(content,
+										newone, java.nio.charset.Charset
+												.forName("UTF-8"));
+								add.addFilepattern(path);
+							}
+							{
+								String content = "gyappa \nguwawa\ngyowagyowa";
+								String path = "hoge/moge/piro.txt";
+								File newone = new File(working, path);
+								com.google.common.io.Files.write(content,
+										newone, java.nio.charset.Charset
+												.forName("UTF-8"));
+								add.addFilepattern(path);
+							}
+							add.call();
+
+							RevCommit commit = g
+									.commit()
+									.setMessage("ぎょっわぎょわ")
+									.setAuthor("testdiff",
+											"testdiff@koshinuke.org").call();
+							g.push().call();
+							return commit.getId().name();
+						} catch (Exception e) {
+							throw new IllegalStateException(e);
+						}
+					}
+				});
+	}
+
+	@Test
+	public void testDiff() throws Exception {
+		String commitid = this.setUpTestDiff(this.cloneTestRepo());
+		String path = "/dynamic/proj/repo/commit/" + commitid;
+		DiffModel model = this.resource().path(path).get(DiffModel.class);
+		assertNotNull(model);
+		assertEquals(commitid, model.getCommit().name());
+		assertEquals(1, model.getParents().length);
+		List<DiffEntryModel> list = model.getDiff();
+		assertEquals(2, list.size());
+		for (DiffEntryModel dem : list) {
+			System.out.printf("[%s] %s -> %s %n", dem.getOperation(),
+					dem.getBeforePath(), dem.getAfterPath());
+			System.out.println("=============================================");
+			System.out.println(dem.getContent());
+			System.out.println("=============================================");
+			System.out.println(dem.getPatch());
+		}
 	}
 }

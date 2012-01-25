@@ -46,8 +46,8 @@ public class DiffModel {
 		return this.diff;
 	}
 
-	public void setDiff(List<DiffEntryModel> diff) {
-		this.diff = diff;
+	public void setDiff(List<DiffEntryModel> list) {
+		this.diff = list;
 	}
 
 }

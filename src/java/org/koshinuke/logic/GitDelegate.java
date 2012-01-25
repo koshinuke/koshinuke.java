@@ -1,5 +1,6 @@
 package org.koshinuke.logic;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -42,9 +44,12 @@ import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
+import org.koshinuke.jgit.SimpleDiffFormatter;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
+import org.koshinuke.model.DiffEntryModel;
+import org.koshinuke.model.DiffModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -477,6 +482,7 @@ public class GitDelegate {
 
 	protected BlobModel findBlob(RevWalk walk, Repository repo, ObjectId oid,
 			WalkingContext context) {
+
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setRecursive(true);
 		try {
@@ -843,6 +849,88 @@ public class GitDelegate {
 			return result;
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
+		}
+	}
+
+	public DiffModel getDiff(String project, String repository,
+			final String commitid) {
+		return this.handleLocal(project, repository,
+				new Function<Repository, DiffModel>() {
+					@Override
+					public DiffModel apply(final Repository repo) {
+						return GitUtil.walk(repo,
+								new Function<RevWalk, DiffModel>() {
+									@Override
+									public DiffModel apply(RevWalk walk) {
+										return GitDelegate.this.getDiff(walk,
+												repo, commitid);
+									}
+								});
+					}
+				});
+	}
+
+	protected DiffModel getDiff(RevWalk walk, Repository repo, String commitid) {
+		try {
+			ObjectId oid = repo.resolve(commitid);
+			RevCommit current = walk.parseCommit(oid);
+			DiffModel result = new DiffModel(current);
+			if (0 < current.getParentCount()) {
+				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+				DiffFormatter fmt = new SimpleDiffFormatter(out);
+				fmt.setRepository(repo);
+				// TODO whitespaceの扱いを設定できる様にする？
+				fmt.setDiffComparator(RawTextComparator.WS_IGNORE_CHANGE);
+				fmt.setDetectRenames(true);
+				// TODO git note の扱い。
+				List<DiffEntryModel> list = new ArrayList<>();
+				RevTree a = walk.parseCommit(current.getParent(0)).getTree();
+				RevTree b = current.getTree();
+				for (DiffEntry de : fmt.scan(a, b)) {
+					DiffEntryModel dm = new DiffEntryModel(de);
+					fmt.format(de);
+					fmt.flush();
+					dm.setContent(this.getStringContent(repo, a,
+							de.getOldPath()));
+					dm.setPatch(out.toString("UTF-8"));
+					out.reset();
+					list.add(dm);
+				}
+				result.setDiff(list);
+			}
+			return result;
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	protected String getStringContent(Repository repo, RevTree tree, String path)
+			throws IOException {
+		byte[] bytes = this.getContent(repo, tree, path);
+		if (bytes != null) {
+			return new String(bytes, Charsets.UTF_8);
+		}
+		return null;
+	}
+
+	protected byte[] getContent(Repository repo, RevTree tree, String path)
+			throws IOException {
+		TreeWalk tw = new TreeWalk(repo);
+		try {
+			tw.setRecursive(true);
+			tw.reset(tree);
+			tw.setFilter(PathFilter.create(path));
+			if (tw.next()) {
+				ObjectId o = tw.getObjectId(0);
+				ObjectLoader ol = tw.getObjectReader().open(o,
+						Constants.OBJ_BLOB);
+				try (InputStream in = ol.openStream()) {
+					return ByteStreams.toByteArray(in);
+				}
+			}
+			return null;
+		} finally {
+			tw.release();
 		}
 	}
 }

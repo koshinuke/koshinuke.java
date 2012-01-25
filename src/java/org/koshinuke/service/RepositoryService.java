@@ -23,6 +23,7 @@ import org.koshinuke.logic.GitDelegate;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
+import org.koshinuke.model.DiffModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
@@ -160,10 +161,14 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Path("/{project}/{repository}/commit/{commitid: [a-zA-Z0-9]{40}}")
+	@Path("/{project}/{repository}/commit/{commitid: [a-zA-Z0-9]{2,40}}")
 	public Response diff(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("commitid") String commitid) {
-		return null;
+		DiffModel model = this.git.getDiff(project, repository, commitid);
+		if (model == null) {
+			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		}
+		return Response.ok(model).build();
 	}
 }

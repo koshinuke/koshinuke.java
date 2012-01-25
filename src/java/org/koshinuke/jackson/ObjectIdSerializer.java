@@ -1,22 +1,27 @@
 package org.koshinuke.jackson;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.SerializerProvider;
+import org.eclipse.jgit.lib.ObjectId;
 
 /**
  * @author taichi
  */
-public class URLencodingSerializer extends JsonSerializer<String> {
+public class ObjectIdSerializer extends JsonSerializer<ObjectId> {
 
 	@Override
-	public void serialize(String value, JsonGenerator jgen,
+	public void serialize(ObjectId value, JsonGenerator jgen,
 			SerializerProvider provider) throws IOException,
 			JsonProcessingException {
-		jgen.writeString(URLEncoder.encode(value, "UTF-8"));
+		if (value == null) {
+			jgen.writeString(ObjectId.zeroId().name());
+		} else {
+			jgen.writeString(value.name());
+		}
 	}
+
 }

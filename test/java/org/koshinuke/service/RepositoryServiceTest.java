@@ -28,6 +28,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.koshinuke.App;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.TestConfigurationtProvider;
@@ -64,6 +65,13 @@ public class RepositoryServiceTest extends KoshinukeTest {
 			s.add(TestConfigurationtProvider.class);
 			s.add(TestPrincipalProvider.class);
 			return s;
+		}
+
+		@Override
+		public Set<Object> getSingletons() {
+			HashSet<Object> singletons = new HashSet<Object>();
+			singletons.add(App.makeJsonProvider());
+			return singletons;
 		}
 	}
 

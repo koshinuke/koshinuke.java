@@ -17,10 +17,10 @@ import com.sun.jersey.spi.resource.Singleton;
  */
 @Singleton
 @Provider
-public class ConfigurationtProvider extends
+public class ConfigurationProvider extends
 		SingletonTypeInjectableProvider<Context, Configuration> {
 
-	public ConfigurationtProvider(@Context ServletContext context)
+	public ConfigurationProvider(@Context ServletContext context)
 			throws Exception {
 		super(Configuration.class, configure(context));
 	}

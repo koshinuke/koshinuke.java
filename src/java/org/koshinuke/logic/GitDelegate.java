@@ -491,7 +491,7 @@ public class GitDelegate {
 					// クライアント側に対してリソースが大きすぎる事を通知した上で、再リクエストしてもらう仕組みを作りこむ。
 					byte[] bytes = ByteStreams.toByteArray(in);
 					BlobModel bm = new BlobModel();
-					bm.setRawObjectId(o);
+					bm.setObjectid(o);
 
 					StringBuilder stb = this.toDataScheme(context.resource);
 					if (stb == null) {
@@ -610,7 +610,7 @@ public class GitDelegate {
 				tw.setFilter(PathFilter.create(context.resource));
 				if (tw.next()) {
 					ObjectId o = tw.getObjectId(0);
-					if (o.equals(input.getRawObjectId())) {
+					if (o.equals(input.getObjectid())) {
 						RevCommit commit = walk.parseCommit(oid);
 						return this.modifyResource(p, repo, commit, context,
 								input);

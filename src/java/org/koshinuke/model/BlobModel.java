@@ -1,17 +1,12 @@
 package org.koshinuke.model;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.util.StringUtils;
 
 /**
  * @author taichi
  */
 public class BlobModel extends BasicGitModel {
 
-	@JsonIgnore
 	ObjectId objectid = ObjectId.zeroId();
 
 	String contents;
@@ -25,27 +20,12 @@ public class BlobModel extends BasicGitModel {
 		this.contents = src.contents;
 	}
 
-	@JsonIgnore
-	public void setRawObjectId(ObjectId objectid) {
-		this.objectid = objectid;
-	}
-
-	@JsonIgnore
-	public ObjectId getRawObjectId() {
+	public ObjectId getObjectid() {
 		return this.objectid;
 	}
 
-	@JsonProperty("objectid")
-	public String getObjectId() {
-		return this.objectid.name();
-	}
-
-	@JsonProperty("objectid")
-	public void setObjectId(String objectid) {
-		if (StringUtils.isEmptyOrNull(objectid) == false
-				&& objectid.length() == Constants.OBJECT_ID_STRING_LENGTH) {
-			this.objectid = ObjectId.fromString(objectid);
-		}
+	public void setObjectid(ObjectId objectid) {
+		this.objectid = objectid;
 	}
 
 	public String getContents() {

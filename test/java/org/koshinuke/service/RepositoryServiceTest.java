@@ -443,6 +443,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertEquals(1, model.getParents().length);
 		List<DiffEntryModel> list = model.getDiff();
 		assertEquals(2, list.size());
+		assertTrue(list.get(0).getPatch().startsWith("@@ -1 +1,3 @@"));
+		assertTrue(list.get(1).getPatch().startsWith("@@ -0,0 +1 @@"));
+
 		for (DiffEntryModel dem : list) {
 			System.out.printf("[%s] %s -> %s %n", dem.getOperation(),
 					dem.getBeforePath(), dem.getAfterPath());

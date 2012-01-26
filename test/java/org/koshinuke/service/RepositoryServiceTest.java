@@ -242,14 +242,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 				.path("/dynamic/proj/repo/blob/master/README")
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
 		assertNotNull(bm);
-		assertEquals("readme readme", bm.getContents());
+		assertEquals("readme readme", bm.getContent());
 		assertEquals("initial commit", bm.getMessage());
 
 		bm = this.resource()
 				.path("/dynamic/proj/repo/blob/test/hoge/hoge/moge/piro.txt")
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
 		assertNotNull(bm);
-		assertEquals("gyappa gyappa", bm.getContents());
+		assertEquals("gyappa gyappa", bm.getContent());
 		assertEquals("gyawawa", bm.getMessage());
 		assertEquals("monster1", bm.getAuthor());
 
@@ -264,7 +264,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 			BlobModel newone = new BlobModel(bm);
 			newone.setMessage("modifiy!!");
-			newone.setContents(bm.getContents() + "\nhogehoge");
+			newone.setContent(bm.getContent() + "\nhogehoge");
 
 			this.testModifyBlob(path, newone);
 		}
@@ -272,7 +272,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		BlobModel bm = this.getBlob(path);
 		BlobModel newone = new BlobModel(bm);
 		newone.setMessage("mod mod");
-		newone.setContents(bm.getContents() + "\nhogehoge");
+		newone.setContent(bm.getContent() + "\nhogehoge");
 
 		this.testModifyBlob(path, newone);
 	}
@@ -284,7 +284,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		BlobModel bm = this.getBlob(path);
 		BlobModel newone = new BlobModel(bm);
 		newone.setMessage("mod mod");
-		newone.setContents(bm.getContents() + "\nhogehoge");
+		newone.setContent(bm.getContent() + "\nhogehoge");
 		try {
 			this.testModifyBlob(path, newone);
 			fail();
@@ -310,7 +310,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 		assertNotSame(newone.getTimestamp(), modified.getTimestamp());
 		assertEquals(newone.getMessage(), modified.getMessage());
-		assertEquals(newone.getContents(), modified.getContents());
+		assertEquals(newone.getContent(), modified.getContent());
 	}
 
 	@Test
@@ -448,7 +448,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 		for (DiffEntryModel dem : list) {
 			System.out.printf("[%s] %s -> %s %n", dem.getOperation(),
-					dem.getBeforePath(), dem.getAfterPath());
+					dem.getOldpath(), dem.getNewpath());
 			System.out.println("=============================================");
 			System.out.println(dem.getContent());
 			System.out.println("=============================================");

@@ -9,7 +9,7 @@ public class BlobModel extends BasicGitModel {
 
 	ObjectId objectid = ObjectId.zeroId();
 
-	String contents;
+	String content;
 
 	public BlobModel() {
 	}
@@ -17,7 +17,7 @@ public class BlobModel extends BasicGitModel {
 	public BlobModel(BlobModel src) {
 		super(src);
 		this.objectid = src.objectid;
-		this.contents = src.contents;
+		this.content = src.content;
 	}
 
 	public ObjectId getObjectid() {
@@ -28,11 +28,11 @@ public class BlobModel extends BasicGitModel {
 		this.objectid = objectid;
 	}
 
-	public String getContents() {
-		return this.contents;
+	public String getContent() {
+		return this.content;
 	}
 
-	public void setContents(String contents) {
-		this.contents = contents;
+	public void setContent(String content) {
+		this.content = content;
 	}
 }

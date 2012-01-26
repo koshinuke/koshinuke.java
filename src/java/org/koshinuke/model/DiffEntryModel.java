@@ -17,19 +17,17 @@ public class DiffEntryModel {
 	@JsonIgnore
 	ChangeType operation;
 
-	@JsonIgnore
-	String beforePath;
+	String oldpath;
 
-	@JsonIgnore
-	String afterPath;
+	String newpath;
 
 	public DiffEntryModel() {
 	}
 
 	public DiffEntryModel(DiffEntry de) {
 		this.operation = de.getChangeType();
-		this.beforePath = de.getOldPath();
-		this.afterPath = de.getNewPath();
+		this.oldpath = de.getOldPath();
+		this.newpath = de.getNewPath();
 	}
 
 	public String getContent() {
@@ -58,24 +56,20 @@ public class DiffEntryModel {
 		this.operation = ChangeType.valueOf(operation.toUpperCase());
 	}
 
-	@JsonProperty("b_path")
-	public String getBeforePath() {
-		return this.beforePath;
+	public String getOldpath() {
+		return this.oldpath;
 	}
 
-	@JsonProperty("b_path")
-	public void setBeforePath(String beforePath) {
-		this.beforePath = beforePath;
+	public void setOldpath(String oldpath) {
+		this.oldpath = oldpath;
 	}
 
-	@JsonProperty("a_path")
-	public String getAfterPath() {
-		return this.afterPath;
+	public String getNewpath() {
+		return this.newpath;
 	}
 
-	@JsonProperty("a_path")
-	public void setAfterPath(String afterPath) {
-		this.afterPath = afterPath;
+	public void setNewpath(String newpath) {
+		this.newpath = newpath;
 	}
 
 }

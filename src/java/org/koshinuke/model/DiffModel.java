@@ -1,5 +1,6 @@
 package org.koshinuke.model;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -9,14 +10,14 @@ import org.eclipse.jgit.revwalk.RevCommit;
 /**
  * @author taichi
  */
-public class DiffModel {
+public class DiffModel extends BasicGitModel {
 
 	ObjectId commit;
 
 	ObjectId[] parents;
 
 	@JsonSerialize(contentAs = DiffEntryModel.class)
-	List<DiffEntryModel> diff;
+	List<DiffEntryModel> diff = Collections.emptyList();
 
 	public DiffModel() {
 	}

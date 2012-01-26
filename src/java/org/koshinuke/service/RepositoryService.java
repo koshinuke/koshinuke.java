@@ -122,7 +122,7 @@ public class RepositoryService {
 			@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@PathParam("rev") String rev, BlobModel input) {
-		if (StringUtils.isEmptyOrNull(input.getContents()) == false
+		if (StringUtils.isEmptyOrNull(input.getContent()) == false
 				&& StringUtils.isEmptyOrNull(input.getMessage()) == false) {
 			BlobModel blob = this.git.modifyBlob(p, project, repository, rev,
 					input);

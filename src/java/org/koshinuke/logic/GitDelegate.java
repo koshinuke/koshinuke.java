@@ -504,10 +504,10 @@ public class GitDelegate {
 						// TODO from config? see.
 						// com.ibm.icu.text.CharsetDetector
 						// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
-						bm.setContents(new String(bytes, Charsets.UTF_8));
+						bm.setContent(new String(bytes, Charsets.UTF_8));
 					} else {
 						stb.append(Base64.encodeBytes(bytes));
-						bm.setContents(stb.toString());
+						bm.setContent(stb.toString());
 					}
 					return bm;
 				}
@@ -647,7 +647,7 @@ public class GitDelegate {
 										.setStartPoint(commit)
 										.setName(context.root).call();
 								File file = new File(working, context.resource);
-								Files.write(input.getContents(), file,
+								Files.write(input.getContent(), file,
 										Charsets.UTF_8);
 								g.add().addFilepattern(context.resource).call();
 								PersonIdent commiter = GitDelegate.this.config
@@ -875,6 +875,7 @@ public class GitDelegate {
 			ObjectId oid = repo.resolve(commitid);
 			RevCommit current = walk.parseCommit(oid);
 			DiffModel result = new DiffModel(current);
+			result.setLastCommit(current);
 			if (0 < current.getParentCount()) {
 				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 				DiffFormatter fmt = new SimpleDiffFormatter(out);
@@ -890,8 +891,7 @@ public class GitDelegate {
 					DiffEntryModel dm = new DiffEntryModel(de);
 					fmt.format(de);
 					fmt.flush();
-					dm.setContent(this.getStringContent(repo, a,
-							de.getOldPath()));
+					this.setContent(repo, de, dm, a, b);
 					dm.setPatch(out.toString("UTF-8"));
 					out.reset();
 					list.add(dm);
@@ -901,6 +901,27 @@ public class GitDelegate {
 			return result;
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
+		}
+	}
+
+	protected void setContent(Repository repo, DiffEntry de, DiffEntryModel dm,
+			RevTree a, RevTree b) throws IOException {
+		switch (de.getChangeType()) {
+		case ADD:
+		case RENAME:
+		case COPY: {
+			dm.setContent(this.getStringContent(repo, b, de.getNewPath()));
+			break;
+		}
+		case MODIFY:
+		case DELETE: {
+			dm.setContent(this.getStringContent(repo, a, de.getOldPath()));
+			break;
+		}
+		default: {
+			throw new IllegalStateException("unknown ChangeType "
+					+ de.getChangeType());
+		}
 		}
 	}
 

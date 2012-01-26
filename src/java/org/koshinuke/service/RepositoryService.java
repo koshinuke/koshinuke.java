@@ -84,7 +84,7 @@ public class RepositoryService {
 		return dv;
 	}
 
-	static final String REV_PART = "{rev: ([a-zA-Z0-9/-_\\+\\*\\.]|%[0-9a-fA-F]{2})+}";
+	static final String REV_PART = "{rev: ([a-zA-Z0-9/_\\-\\+\\.]|%[0-9a-fA-F]{2})+}";
 
 	@GET
 	@Path("/{project}/{repository}/tree/" + REV_PART)

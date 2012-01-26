@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -710,13 +709,6 @@ public class GitDelegate {
 			model.setActivities(activities);
 			result.add(model);
 		}
-		Collections.sort(result, new Comparator<BranchHistoryModel>() {
-			@Override
-			public int compare(BranchHistoryModel left, BranchHistoryModel right) {
-				return Integer.compare(right.getTimestamp(),
-						left.getTimestamp());
-			}
-		});
 		return result;
 	}
 

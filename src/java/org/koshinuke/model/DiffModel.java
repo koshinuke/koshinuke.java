@@ -12,7 +12,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class DiffModel extends BasicGitModel {
 
-	ObjectId commit;
+	ObjectId commit = ObjectId.zeroId();
 
 	ObjectId[] parents;
 

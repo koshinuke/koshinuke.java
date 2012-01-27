@@ -10,18 +10,18 @@ import org.eclipse.jgit.diff.DiffEntry.ChangeType;
  */
 public class DiffEntryModel {
 
-	String oldContent;
+	String oldContent = "";
 
-	String newContent;
+	String newContent = "";
 
-	String patch;
+	String patch = "";
 
 	@JsonIgnore
 	ChangeType operation;
 
-	String oldPath;
+	String oldPath = "";
 
-	String newPath;
+	String newPath = "";
 
 	public DiffEntryModel() {
 	}

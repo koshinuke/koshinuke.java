@@ -3,7 +3,6 @@ package org.koshinuke.logic;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,6 +27,7 @@ import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectStream;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -468,10 +468,7 @@ public class GitDelegate {
 				public BlobModel apply(RevWalk walk) {
 					BlobModel bm = GitDelegate.this.findBlob(walk, repo, oid,
 							context);
-					if (bm != null) {
-						GitDelegate.this.walkCommits(walk, repo, oid, context,
-								bm);
-					}
+					GitDelegate.this.walkCommits(walk, repo, oid, context, bm);
 					return bm;
 				}
 			});
@@ -481,58 +478,24 @@ public class GitDelegate {
 
 	protected BlobModel findBlob(RevWalk walk, Repository repo, ObjectId oid,
 			WalkingContext context) {
-
-		TreeWalk tw = new TreeWalk(repo);
-		tw.setRecursive(true);
 		try {
-			tw.reset(walk.parseTree(oid));
-			tw.setFilter(PathFilter.create(context.resource));
-			if (tw.next()) {
-				ObjectId o = tw.getObjectId(0);
-				ObjectLoader ol = tw.getObjectReader().open(o,
-						Constants.OBJ_BLOB);
-				try (InputStream in = ol.openStream()) {
-					// TODO コンテンツがデカ過ぎる場合、メモリに全部展開してしまうのは良くないので、
-					// クライアント側に対してリソースが大きすぎる事を通知した上で、再リクエストしてもらう仕組みを作りこむ。
-					byte[] bytes = ByteStreams.toByteArray(in);
-					BlobModel bm = new BlobModel();
-					bm.setObjectid(o);
+			final BlobModel bm = new BlobModel();
+			this.setContent(repo, walk.parseTree(oid), context.resource,
+					new BlobHolder() {
+						@Override
+						public void setId(ObjectId oid) {
+							bm.setObjectId(oid);
+						}
 
-					StringBuilder stb = this.toDataScheme(context.resource);
-					if (stb == null) {
-						// TODO from config? see.
-						// com.ibm.icu.text.CharsetDetector
-						// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
-						bm.setContent(new String(bytes, Charsets.UTF_8));
-					} else {
-						stb.append(Base64.encodeBytes(bytes));
-						bm.setContent(stb.toString());
-					}
-					return bm;
-				}
-			}
+						@Override
+						public void setContent(String content) {
+							bm.setContent(content);
+						}
+					});
+			return bm;
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
-		} finally {
-			tw.release();
 		}
-		return null;
-	}
-
-	static final Pattern isImages = Pattern.compile(
-			"\\.(jpe?g|gif|png|ico|bmp)$", Pattern.CASE_INSENSITIVE);
-
-	// see. http://tools.ietf.org/html/rfc2397
-	protected StringBuilder toDataScheme(String path) {
-		Matcher m = isImages.matcher(path);
-		if (m.find()) {
-			StringBuilder stb = new StringBuilder();
-			stb.append("data:image/");
-			stb.append(m.group(1));
-			stb.append(";base64,");
-			return stb;
-		}
-		return null;
 	}
 
 	protected void walkCommits(RevWalk walk, Repository repo, ObjectId oid,
@@ -615,7 +578,7 @@ public class GitDelegate {
 				tw.setFilter(PathFilter.create(context.resource));
 				if (tw.next()) {
 					ObjectId o = tw.getObjectId(0);
-					if (o.equals(input.getObjectid())) {
+					if (o.equals(input.getObjectId())) {
 						RevCommit commit = walk.parseCommit(oid);
 						return this.modifyResource(p, repo, commit, context,
 								input);
@@ -875,17 +838,18 @@ public class GitDelegate {
 				// TODO whitespaceの扱いを設定できる様にする？
 				fmt.setDiffComparator(RawTextComparator.WS_IGNORE_CHANGE);
 				fmt.setDetectRenames(true);
-				// TODO git note の扱い。
+				// TODO git note を、どう扱うか考える。
 				List<DiffEntryModel> list = new ArrayList<>();
-				RevTree a = walk.parseCommit(current.getParent(0)).getTree();
-				RevTree b = current.getTree();
-				for (DiffEntry de : fmt.scan(a, b)) {
+				RevTree oldTree = walk.parseCommit(current.getParent(0))
+						.getTree();
+				RevTree newTree = current.getTree();
+				for (DiffEntry de : fmt.scan(oldTree, newTree)) {
 					DiffEntryModel dm = new DiffEntryModel(de);
 					fmt.format(de);
 					fmt.flush();
-					this.setContent(repo, de, dm, a, b);
 					dm.setPatch(out.toString("UTF-8"));
 					out.reset();
+					this.setContent(repo, oldTree, newTree, de, dm);
 					list.add(dm);
 				}
 				result.setDiff(list);
@@ -896,38 +860,41 @@ public class GitDelegate {
 		}
 	}
 
-	protected void setContent(Repository repo, DiffEntry de, DiffEntryModel dm,
-			RevTree a, RevTree b) throws IOException {
-		switch (de.getChangeType()) {
-		case ADD:
-		case RENAME:
-		case COPY: {
-			dm.setContent(this.getStringContent(repo, b, de.getNewPath()));
-			break;
+	protected void setContent(Repository repo, RevTree oldTree,
+			RevTree newTree, DiffEntry de, final DiffEntryModel dm)
+			throws IOException {
+		class H implements BlobHolder {
+			@Override
+			public void setId(ObjectId oid) {
+			}
+
+			@Override
+			public void setContent(String content) {
+			}
 		}
-		case MODIFY:
-		case DELETE: {
-			dm.setContent(this.getStringContent(repo, a, de.getOldPath()));
-			break;
-		}
-		default: {
-			throw new IllegalStateException("unknown ChangeType "
-					+ de.getChangeType());
-		}
-		}
+
+		this.setContent(repo, oldTree, de.getOldPath(), new H() {
+			@Override
+			public void setContent(String content) {
+				dm.setOldContent(content);
+			}
+		});
+		this.setContent(repo, newTree, de.getNewPath(), new H() {
+			@Override
+			public void setContent(String content) {
+				dm.setNewContent(content);
+			}
+		});
 	}
 
-	protected String getStringContent(Repository repo, RevTree tree, String path)
-			throws IOException {
-		byte[] bytes = this.getContent(repo, tree, path);
-		if (bytes != null) {
-			return new String(bytes, Charsets.UTF_8);
-		}
-		return null;
+	interface BlobHolder {
+		void setId(ObjectId oid);
+
+		void setContent(String content);
 	}
 
-	protected byte[] getContent(Repository repo, RevTree tree, String path)
-			throws IOException {
+	protected void setContent(Repository repo, RevTree tree, String path,
+			BlobHolder holder) throws IOException {
 		TreeWalk tw = new TreeWalk(repo);
 		try {
 			tw.setRecursive(true);
@@ -937,13 +904,42 @@ public class GitDelegate {
 				ObjectId o = tw.getObjectId(0);
 				ObjectLoader ol = tw.getObjectReader().open(o,
 						Constants.OBJ_BLOB);
-				try (InputStream in = ol.openStream()) {
-					return ByteStreams.toByteArray(in);
+				try (ObjectStream in = ol.openStream()) {
+					// TODO コンテンツがデカ過ぎる場合、メモリに全部展開してしまうのは良くないので、
+					// クライアント側に対してリソースが大きすぎる事を通知した上で、再リクエストしてもらう仕組みを作りこむ。
+					byte[] bytes = ByteStreams.toByteArray(in);
+					StringBuilder stb = this.toDataScheme(path);
+					if (stb == null) {
+						// TODO from config?
+						// see. com.ibm.icu.text.CharsetDetector
+						// UTF-8以外のモノが混ざる様ならコンテンツの文字エンコーディングをここでUTF-8に変換する必要がある。
+						holder.setContent(new String(bytes, Charsets.UTF_8));
+					} else {
+						stb.append(Base64.encodeBytes(bytes));
+						holder.setContent(stb.toString());
+					}
+					holder.setId(o);
 				}
 			}
-			return null;
 		} finally {
 			tw.release();
 		}
 	}
+
+	static final Pattern isImages = Pattern.compile(
+			"\\.(jpe?g|gif|png|ico|bmp)$", Pattern.CASE_INSENSITIVE);
+
+	// see. http://tools.ietf.org/html/rfc2397
+	protected StringBuilder toDataScheme(String path) {
+		Matcher m = isImages.matcher(path);
+		if (m.find()) {
+			StringBuilder stb = new StringBuilder();
+			stb.append("data:image/");
+			stb.append(m.group(1));
+			stb.append(";base64,");
+			return stb;
+		}
+		return null;
+	}
+
 }

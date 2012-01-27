@@ -10,32 +10,42 @@ import org.eclipse.jgit.diff.DiffEntry.ChangeType;
  */
 public class DiffEntryModel {
 
-	String content;
+	String oldContent;
+
+	String newContent;
 
 	String patch;
 
 	@JsonIgnore
 	ChangeType operation;
 
-	String oldpath;
+	String oldPath;
 
-	String newpath;
+	String newPath;
 
 	public DiffEntryModel() {
 	}
 
 	public DiffEntryModel(DiffEntry de) {
 		this.operation = de.getChangeType();
-		this.oldpath = de.getOldPath();
-		this.newpath = de.getNewPath();
+		this.oldPath = de.getOldPath();
+		this.newPath = de.getNewPath();
 	}
 
-	public String getContent() {
-		return this.content;
+	public String getOldContent() {
+		return this.oldContent;
 	}
 
-	public void setContent(String content) {
-		this.content = content;
+	public void setOldContent(String content) {
+		this.oldContent = content;
+	}
+
+	public String getNewContent() {
+		return this.newContent;
+	}
+
+	public void setNewContent(String newContent) {
+		this.newContent = newContent;
 	}
 
 	public String getPatch() {
@@ -56,20 +66,20 @@ public class DiffEntryModel {
 		this.operation = ChangeType.valueOf(operation.toUpperCase());
 	}
 
-	public String getOldpath() {
-		return this.oldpath;
+	public String getOldPath() {
+		return this.oldPath;
 	}
 
-	public void setOldpath(String oldpath) {
-		this.oldpath = oldpath;
+	public void setOldPath(String oldpath) {
+		this.oldPath = oldpath;
 	}
 
-	public String getNewpath() {
-		return this.newpath;
+	public String getNewPath() {
+		return this.newPath;
 	}
 
-	public void setNewpath(String newpath) {
-		this.newpath = newpath;
+	public void setNewPath(String newpath) {
+		this.newPath = newpath;
 	}
 
 }

@@ -9,6 +9,7 @@ import org.codehaus.jackson.JsonGenerator.Feature;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.koshinuke.jackson.KoshinukeModule;
+import org.koshinuke.jackson.LowerCaseStrategy;
 import org.koshinuke.jersey.ConfigurationProvider;
 import org.koshinuke.jersey.KoshinukePrincipalProvider;
 import org.koshinuke.service.LoginService;
@@ -38,6 +39,7 @@ public class App extends Application {
 
 	public static JacksonJsonProvider makeJsonProvider() {
 		ObjectMapper om = new ObjectMapper();
+		om.setPropertyNamingStrategy(new LowerCaseStrategy());
 		om.configure(Feature.ESCAPE_NON_ASCII, true);
 		om.registerModule(new KoshinukeModule());
 		return new JacksonJsonProvider(om);

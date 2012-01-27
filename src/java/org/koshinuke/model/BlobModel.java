@@ -7,7 +7,7 @@ import org.eclipse.jgit.lib.ObjectId;
  */
 public class BlobModel extends BasicGitModel {
 
-	ObjectId objectid = ObjectId.zeroId();
+	ObjectId objectId = ObjectId.zeroId();
 
 	String content;
 
@@ -16,16 +16,16 @@ public class BlobModel extends BasicGitModel {
 
 	public BlobModel(BlobModel src) {
 		super(src);
-		this.objectid = src.objectid;
+		this.objectId = src.objectId;
 		this.content = src.content;
 	}
 
-	public ObjectId getObjectid() {
-		return this.objectid;
+	public ObjectId getObjectId() {
+		return this.objectId;
 	}
 
-	public void setObjectid(ObjectId objectid) {
-		this.objectid = objectid;
+	public void setObjectId(ObjectId objectid) {
+		this.objectId = objectid;
 	}
 
 	public String getContent() {

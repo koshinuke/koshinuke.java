@@ -448,9 +448,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 		for (DiffEntryModel dem : list) {
 			System.out.printf("[%s] %s -> %s %n", dem.getOperation(),
-					dem.getOldpath(), dem.getNewpath());
+					dem.getOldPath(), dem.getNewPath());
 			System.out.println("=============================================");
-			System.out.println(dem.getContent());
+			System.out.println(dem.getOldContent());
 			System.out.println("=============================================");
 			System.out.println(dem.getPatch());
 		}

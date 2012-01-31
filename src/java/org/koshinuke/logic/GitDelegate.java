@@ -36,6 +36,7 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -793,7 +794,9 @@ public class GitDelegate {
 			walk.reset();
 			walk.markStart(begin);
 			if (StringUtils.isEmptyOrNull(context.resource) == false) {
-				walk.setTreeFilter(PathFilter.create(context.resource));
+				walk.setTreeFilter(AndTreeFilter.create(
+						PathFilter.create(context.resource),
+						TreeFilter.ANY_DIFF));
 			}
 			for (RevCommit rc : walk) {
 				if (limit-- < 1) {

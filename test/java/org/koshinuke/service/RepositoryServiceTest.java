@@ -35,6 +35,7 @@ import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
+import org.koshinuke.model.BlameModel;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
@@ -453,6 +454,25 @@ public class RepositoryServiceTest extends KoshinukeTest {
 			System.out.println(dem.getOldContent());
 			System.out.println("=============================================");
 			System.out.println(dem.getPatch());
+		}
+	}
+
+	@Test
+	public void testBlame() throws Exception {
+		this.setUpTestDiff(this.cloneTestRepo());
+		List<BlameModel> list = this.resource()
+				.path("/dynamic/proj/repo/blame/test/hoge/hoge/moge/piro.txt")
+				.accept(MediaType.APPLICATION_JSON_TYPE)
+				.get(new GenericType<List<BlameModel>>() {
+				});
+
+		assertNotNull(list);
+		assertEquals(3, list.size());
+		assertEquals("gyappa ", list.get(0).getContent());
+		assertEquals("ぎょっわぎょわ", list.get(0).getMessage());
+		for (BlameModel bm : list) {
+			System.out.printf("%s %s [%-20s] %s%n", bm.getAuthor(),
+					bm.getTimestamp(), bm.getMessage(), bm.getContent());
 		}
 	}
 }

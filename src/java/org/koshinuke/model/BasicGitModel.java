@@ -1,6 +1,7 @@
 package org.koshinuke.model;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
@@ -8,11 +9,13 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class BasicGitModel {
 
-	protected int timestamp;
+	protected ObjectId commit = ObjectId.zeroId();
 
-	protected String message;
+	protected int timestamp = 0;
 
-	protected String author;
+	protected String message = "";
+
+	protected String author = "";
 
 	public BasicGitModel() {
 	}
@@ -25,9 +28,18 @@ public class BasicGitModel {
 
 	@JsonIgnore
 	public void setLastCommit(RevCommit commit) {
+		this.commit = commit;
 		this.timestamp = commit.getCommitTime();
 		this.message = commit.getFullMessage();
 		this.author = commit.getAuthorIdent().getName();
+	}
+
+	public ObjectId getCommit() {
+		return this.commit;
+	}
+
+	public void setCommit(ObjectId commit) {
+		this.commit = commit;
 	}
 
 	public int getTimestamp() {

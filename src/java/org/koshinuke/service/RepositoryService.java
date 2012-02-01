@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.logic.GitDelegate;
+import org.koshinuke.model.BlameModel;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
@@ -170,5 +171,17 @@ public class RepositoryService {
 			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 		}
 		return Response.ok(model).build();
+	}
+
+	@GET
+	@Path("/{project}/{repository}/blame/" + REV_PART)
+	public Response blame(@PathParam("project") String project,
+			@PathParam("repository") String repository,
+			@PathParam("rev") String rev) {
+		List<BlameModel> list = this.git.getBlame(project, repository, rev);
+		if (list == null) {
+			return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		}
+		return Response.ok(list).build();
 	}
 }

@@ -21,8 +21,10 @@ import net.iharder.Base64;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -45,6 +47,7 @@ import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke._;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jgit.SimpleDiffFormatter;
+import org.koshinuke.model.BlameModel;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
 import org.koshinuke.model.CommitModel;
@@ -941,6 +944,37 @@ public class GitDelegate {
 			stb.append(m.group(1));
 			stb.append(";base64,");
 			return stb;
+		}
+		return null;
+	}
+
+	public List<BlameModel> getBlame(String project, String repository,
+			final String rev) {
+		return this.handleLocal(project, repository,
+				new Function<Repository, List<BlameModel>>() {
+					@Override
+					public List<BlameModel> apply(Repository repo) {
+						return GitDelegate.this.parseBlame(repo, rev);
+					}
+				});
+	}
+
+	protected List<BlameModel> parseBlame(Repository repo, String rev) {
+		final WalkingContext context = new WalkingContext(rev);
+		final ObjectId oid = this.findRootObject(repo, context);
+		if (oid != null) {
+			Git g = new Git(repo);
+			BlameResult br = g.blame().setFilePath(context.resource)
+					.setStartCommit(oid).setFollowFileRenames(true).call();
+			RawText rt = br.getResultContents();
+			List<BlameModel> list = new ArrayList<>();
+			for (int i = 0, l = rt.size(); i < l; i++) {
+				RevCommit rc = br.getSourceCommit(i);
+				BlameModel bm = new BlameModel(rc);
+				bm.setContent(rt.getString(i));
+				list.add(bm);
+			}
+			return list;
 		}
 		return null;
 	}

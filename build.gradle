@@ -1,4 +1,14 @@
 // -Xms40m -Xmx4096m -Dfile.encoding=UTF-8
+import java.io.File
+import java.nio.file.*
+
+import org.eclipse.jgit.api.*
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
+import org.eclipse.jgit.lib.*
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+
+import org.mozilla.javascript.*;
+
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
@@ -83,15 +93,10 @@ buildscript {
 		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 		classpath 'org.eclipse.jetty:jetty-http:8.0.+'
 		classpath 'com.google.guava:guava:11.+'
+		classpath 'org.mozilla:rhino:1.7R3'
+		classpath 'com.google.javascript:closure-compiler:r+'
 	}
 }
-
-import java.io.File;
-import java.nio.file.*
-import org.eclipse.jgit.api.*
-import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
-import org.eclipse.jgit.lib.*
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
 task cloneWeb(dependsOn: clean) << {
 	def dir = file("$buildDir/cloneweb/")
@@ -149,13 +154,13 @@ task testrepo {
 			addFile("hoge/moge/piro.txt", "gyappa gyappa");
 			g.commit().setMessage("gyawawa").setAuthor("monster1", "mostol@koshinuke.org").call();
 			g.tag().setName("beta/0.0.1").setMessage("GYOWAWA!!").call();
-			
+
 			g.checkout().setCreateBranch(true).setName("test/moge").call();
 			addFile("myomyo/muga/piyopiyo.txt", "GYAPPA GYAPPA");
 			g.commit().setMessage("ぐわわ…").setAuthor("monster2", "mostol2@koshinuke.org").call();
 			g.tag().setName("beta/0.0.2").setMessage("GYOWAWA!! GYOWAWA!!").call();
 
-			
+
 			g.checkout().setName("master").call();
 			addFile("moge/mmooggee.txt", "mogemoge piropiro");
 			addFile("moge/piro/ppp.txt", "33lladkkiec");
@@ -177,5 +182,35 @@ task passwd {
 	doLast {
 		println "taichi: " + org.eclipse.jetty.http.security.Credential.MD5.digest("taichipass")
 		println "lanius: " + org.eclipse.jetty.http.security.Credential.Crypt.crypt("lanius", "laniuspass")
+	}
+}
+
+task makeExterns {
+	description = "make externs js for closure compiler."
+	doLast {
+		def input = fileTree(dir: "${koshinuke_path}/static/js/org/koshinuke/externs", include: "**/*.js")
+		input.files.each { f ->
+			def output = file("${koshinuke_path}/static/build/externs/" + f.name)
+			output.delete()
+			def ctx = Context.enter()
+			try {
+				output.withWriter { out ->
+					def no = new NativeObject()
+					ctx.compileString(f.text, f.name, 0, null).exec(ctx, no)
+					no.getAllIds() each {
+						def obj = no.get(it)
+						if("function" == obj.typeOf) {
+							ctx.decompileFunction(obj, 0) eachLine {
+								if(it.startsWith("function")) {
+									out.writeLine it + "};"
+								}
+							}
+						}
+					}
+				}
+			} finally {
+				Context.exit()
+			}
+		}
 	}
 }

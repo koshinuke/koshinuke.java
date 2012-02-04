@@ -1,13 +1,11 @@
 // -Xms40m -Xmx4096m -Dfile.encoding=UTF-8
-import java.io.File
-import java.nio.file.*
+import java.io.File;
+import java.nio.file.*;
 
-import org.eclipse.jgit.api.*
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
-import org.eclipse.jgit.lib.*
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
-
-import org.mozilla.javascript.*;
+import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
@@ -42,7 +40,7 @@ dependencies {
 		exclude module: 'geronimo-jta_1.1_spec'
 		exclude module: 'jetty-jndi'
 	}
-
+	testCompile 'com.google.javascript:closure-compiler:r+'
 	testCompile 'junit:junit:4.+'
 	testCompile 'com.sun.jersey:jersey-client:1.11'
 	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') { exclude group: 'javax.servlet' }
@@ -93,8 +91,6 @@ buildscript {
 		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
 		classpath 'org.eclipse.jetty:jetty-http:8.0.+'
 		classpath 'com.google.guava:guava:11.+'
-		classpath 'org.mozilla:rhino:1.7R3'
-		classpath 'com.google.javascript:closure-compiler:r+'
 	}
 }
 
@@ -182,35 +178,5 @@ task passwd {
 	doLast {
 		println "taichi: " + org.eclipse.jetty.http.security.Credential.MD5.digest("taichipass")
 		println "lanius: " + org.eclipse.jetty.http.security.Credential.Crypt.crypt("lanius", "laniuspass")
-	}
-}
-
-task makeExterns {
-	description = "make externs js for closure compiler."
-	doLast {
-		def input = fileTree(dir: "${koshinuke_path}/static/js/org/koshinuke/externs", include: "**/*.js")
-		input.files.each { f ->
-			def output = file("${koshinuke_path}/static/build/externs/" + f.name)
-			output.delete()
-			def ctx = Context.enter()
-			try {
-				output.withWriter { out ->
-					def no = new NativeObject()
-					ctx.compileString(f.text, f.name, 0, null).exec(ctx, no)
-					no.getAllIds() each {
-						def obj = no.get(it)
-						if("function" == obj.typeOf) {
-							ctx.decompileFunction(obj, 0) eachLine {
-								if(it.startsWith("function")) {
-									out.writeLine it + "};"
-								}
-							}
-						}
-					}
-				}
-			} finally {
-				Context.exit()
-			}
-		}
 	}
 }

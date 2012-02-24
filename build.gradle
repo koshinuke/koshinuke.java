@@ -20,13 +20,13 @@ repositories {
 }
 
 dependencies {
-	compile 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
+	['', '.http.server'].each { compile "org.eclipse.jgit:org.eclipse.jgit$it:1.+" }
 	compile 'net.iharder:base64:2.3.8'
 	[
 		'jersey-core',
 		'jersey-server',
 		'jersey-servlet'
-	].each { compile "com.sun.jersey:" + it + ":1.11" }
+	].each { compile "com.sun.jersey:$it:1.+" }
 
 	compile 'com.google.guava:guava:11.+'
 	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
@@ -34,16 +34,17 @@ dependencies {
 
 	providedCompile 'org.mortbay.jetty:servlet-api:3.0.20100224'
 
-	testCompile 'org.eclipse.jetty:jetty-server:8.0.+'
-	testCompile 'org.eclipse.jetty:jetty-servlet:8.0.+'
-	testCompile ('org.eclipse.jetty:jetty-plus:8.0.+') {
-		exclude module: 'geronimo-jta_1.1_spec'
-		exclude module: 'jetty-jndi'
+	[
+		'jetty-server',
+		'jetty-servlet',
+		'jetty-plus'
+	].each {
+		compile ("org.eclipse.jetty:$it:8.+") { exclude group: 'org.eclipse.jetty.orbit' }
 	}
-	testCompile 'com.google.javascript:closure-compiler:r+'
+
 	testCompile 'junit:junit:4.+'
-	testCompile 'com.sun.jersey:jersey-client:1.11'
-	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.11') { exclude group: 'javax.servlet' }
+	testCompile 'com.sun.jersey:jersey-client:1.+'
+	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.+') { exclude group: 'javax.servlet' }
 }
 
 sourceSets {

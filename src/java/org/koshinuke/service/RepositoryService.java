@@ -1,12 +1,13 @@
 package org.koshinuke.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -30,6 +31,7 @@ import org.koshinuke.model.NodeModel;
 import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.ServletUtil;
 
+import com.sun.jersey.api.representation.Form;
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.resource.Singleton;
 
@@ -43,6 +45,22 @@ public class RepositoryService {
 
 	static final Logger LOG = Logger.getLogger(RepositoryService.class
 			.getName());
+
+	Map<String, FormAction> command = new HashMap<>();
+	{
+		this.command.put("init", new FormAction() {
+			@Override
+			public Response execute(KoshinukePrincipal p, Form form) {
+				return RepositoryService.this.initRepository(p, form);
+			}
+		});
+		this.command.put("clone", new FormAction() {
+			@Override
+			public Response execute(KoshinukePrincipal p, Form form) {
+				return RepositoryService.this.cloneRepository(p, form);
+			}
+		});
+	}
 
 	GitDelegate git;
 
@@ -63,12 +81,35 @@ public class RepositoryService {
 	}
 
 	@POST
-	public Response init(@Context KoshinukePrincipal p,
-			@FormParam("rn") String name, @FormParam("rr") String readme) {
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response executeCommand(@Context KoshinukePrincipal p, Form form) {
+		FormAction action = this.command.get(form.getFirst("!"));
+		if (action != null) {
+			return action.execute(p, form);
+		}
+		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+	}
+
+	public Response initRepository(KoshinukePrincipal p, Form form) {
+		String name = form.getFirst("rn");
+		String readme = form.getFirst("rr");
 		if (StringUtils.isEmptyOrNull(name) == false
 				&& StringUtils.isEmptyOrNull(readme) == false) {
 			String[] ary = name.split("/");
 			if (ary.length == 2 && this.git.initRepository(p, name, readme)) {
+				return Response.status(HttpServletResponse.SC_CREATED)
+						.entity(this.listRepository()).build();
+			}
+		}
+		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+	}
+
+	public Response cloneRepository(KoshinukePrincipal p, Form form) {
+		String uri = form.getFirst("uri");
+		String un = form.getFirst("un");
+		String up = form.getFirst("up");
+		if (StringUtils.isEmptyOrNull(uri) == false) {
+			if (this.git.cloneRepository(p, uri, un, up)) {
 				return Response.status(HttpServletResponse.SC_CREATED)
 						.entity(this.listRepository()).build();
 			}

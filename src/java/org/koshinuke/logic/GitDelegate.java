@@ -37,6 +37,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -168,7 +169,7 @@ public class GitDelegate {
 					});
 		} finally {
 			GitUtil.close(initialized);
-
+			this.delete(working);
 		}
 	}
 
@@ -186,6 +187,61 @@ public class GitDelegate {
 			working = root.resolve(RandomUtil.nextString());
 		} while (java.nio.file.Files.exists(working));
 		return working.toFile();
+	}
+
+	public boolean cloneRepository(final KoshinukePrincipal p, String uri,
+			String un, String up) {
+		try {
+			URIish u = new URIish(uri);
+			if (StringUtils.isEmptyOrNull(un) == false
+					&& StringUtils.isEmptyOrNull(up) == false) {
+				u.setUser(un);
+				u.setPass(up);
+			}
+			// ローカルディレクトリの読み取りは許可しない。
+			// TODO support ssh+git
+			if (StringUtils.isEmptyOrNull(u.getHost()) == false) {
+				final File local = pickWorkingDir(this.config.getWorkingDir());
+				try {
+					final String humanish = u.getHumanishName();
+					GitUtil.handleClone(u.toString(),
+							new File(local, humanish), true,
+							new Function<Git, _>() {
+								@Override
+								public _ apply(Git input) {
+									GitDelegate.this.copyCloningRepository(p,
+											input, humanish);
+									return _._;
+								}
+							});
+				} finally {
+					this.delete(local);
+				}
+				return true;
+			}
+		} catch (Exception e) {
+			LOG.log(Level.WARNING, e.getMessage(), e);
+		}
+		return false;
+	}
+
+	protected void copyCloningRepository(final KoshinukePrincipal p, Git input,
+			String humanish) {
+		Repository repo = input.getRepository();
+		File dir = repo.getDirectory();
+		// TODO 特定のプロジェクトに紐付けるのが正しいのでは無いか？
+		Path userPath = GitDelegate.this.config.getRepositoryRootDir().resolve(
+				p.getName());
+		Path newone = userPath.resolve(humanish);
+		if (java.nio.file.Files.exists(newone)) {
+			File f = pickWorkingDir(userPath);
+			newone = f.toPath();
+		}
+		try {
+			java.nio.file.Files.copy(dir.toPath(), newone);
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
 	}
 
 	public List<NodeModel> listRepository(String project, String repository,
@@ -853,7 +909,7 @@ public class GitDelegate {
 					DiffEntryModel dm = new DiffEntryModel(de);
 					fmt.format(de);
 					fmt.flush();
-					dm.setPatch(out.toString("UTF-8"));
+					dm.setPatch(out.toString(Charsets.UTF_8.name()));
 					out.reset();
 					this.setContent(repo, oldTree, newTree, de, dm);
 					list.add(dm);

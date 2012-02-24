@@ -41,7 +41,12 @@ public class GitUtil {
 
 	public static <R> R handleClone(URI uri, File local, boolean bare,
 			Function<Git, R> fn) {
-		Git g = Git.cloneRepository().setURI(uri.toString()).setBare(bare)
+		return handleClone(uri.toString(), local, bare, fn);
+	}
+
+	public static <R> R handleClone(String uri, File local, boolean bare,
+			Function<Git, R> fn) {
+		Git g = Git.cloneRepository().setURI(uri).setBare(bare)
 				.setDirectory(local).call();
 		return handle(g, fn);
 	}

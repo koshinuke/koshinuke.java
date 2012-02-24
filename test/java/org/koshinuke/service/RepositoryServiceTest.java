@@ -121,6 +121,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		final String readme = "readme text";
 		final String path = "test/init";
 		Form form = new Form();
+		form.add("!", "init");
 		form.add("rn", path);
 		form.add("rr", readme);
 
@@ -157,6 +158,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 				return _._;
 			}
 		});
+	}
+
+	@Test
+	public void testClone() throws Exception {
+		// TODO
+		// JGitのHttpServer起動
+		// clone
+		// 結果をassert
 	}
 
 	File cloneTestRepo() throws Exception {

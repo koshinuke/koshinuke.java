@@ -1,8 +1,10 @@
-package org.koshinuke.jersey;
+package org.koshinuke.filter;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
@@ -26,6 +28,10 @@ public class ContentFilterTest {
 
 		matchFalse(p, "/330%21/css/fuga.css");
 		matchFalse(p, "/aa%2/js/piro.js");
+
+		Matcher m = p.matcher("/aa/piro..js.giT/hogehoge%22?aa=bb&cc=dd");
+		assertTrue(m.find());
+		assertEquals("aa/piro..js.giT", m.group(1));
 	}
 
 	static void matchTrue(Pattern p, String value) {

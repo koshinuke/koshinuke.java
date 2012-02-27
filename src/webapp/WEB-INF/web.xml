@@ -23,7 +23,7 @@
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
-			<param-value>/[sS][tT][aA][tT][iI][cC]/.*</param-value>
+			<param-value><![CDATA[/([sS][tT][aA][tT][iI][cC]|([\w\-\.!~\*'\(\):@&=\+\$,]|%[0-9a-zA-Z]{2})+/([\w\-\.!~\*'\(\):@&=\+\$,]|%[0-9a-zA-Z]{2})+\.[gG][iI][tT])(/.*)?]]></param-value>
 		</init-param>
 	</filter>
 	<filter-mapping>

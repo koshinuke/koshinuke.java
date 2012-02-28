@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-	['', '.http.server'].each { compile "org.eclipse.jgit:org.eclipse.jgit$it:1.+" }
+	compile "org.eclipse.jgit:org.eclipse.jgit:1.+"
 	compile 'net.iharder:base64:2.3.8'
 	[
 		'jersey-core',

@@ -12,10 +12,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.util.RandomUtil;
 
+/**
+ * @author taichi
+ */
 public class Main {
 
 	protected static Server start() throws Exception {
-		Server server = new Server(9998);
+		Server server = new Server(80);
 		server.setSendServerVersion(false);
 		WebAppContext sch = new WebAppContext("src/webapp", "/");
 		sch.setDefaultsDescriptor("etc/webdefault.xml");

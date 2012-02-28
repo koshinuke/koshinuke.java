@@ -12,8 +12,9 @@ import org.koshinuke.jackson.KoshinukeModule;
 import org.koshinuke.jackson.LowerCaseStrategy;
 import org.koshinuke.jersey.ConfigurationProvider;
 import org.koshinuke.jersey.KoshinukePrincipalProvider;
-import org.koshinuke.service.LoginService;
+import org.koshinuke.service.UserService;
 import org.koshinuke.service.RepositoryService;
+import org.koshinuke.service.RootService;
 
 /**
  * @author taichi
@@ -23,7 +24,8 @@ public class App extends Application {
 	@Override
 	public Set<Class<?>> getClasses() {
 		Set<Class<?>> classes = new HashSet<>();
-		classes.add(LoginService.class);
+		classes.add(RootService.class);
+		classes.add(UserService.class);
 		classes.add(RepositoryService.class);
 		classes.add(ConfigurationProvider.class);
 		classes.add(KoshinukePrincipalProvider.class);

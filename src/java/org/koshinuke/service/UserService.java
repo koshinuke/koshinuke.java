@@ -17,29 +17,17 @@ import javax.ws.rs.core.UriInfo;
 
 import org.koshinuke.filter.AuthenticationFilter;
 import org.koshinuke.model.Auth;
-import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.resource.Singleton;
 
 @Singleton
-@Path("")
+@Path("/login")
 @Produces(MediaType.TEXT_HTML)
-public class LoginService {
+public class UserService {
 
 	@GET
-	public Viewable index(@Context KoshinukePrincipal p,
-			@Context HttpServletRequest req, @Context HttpServletResponse res) {
-		if (p == null) {
-			ServletUtil.redirect(res, "/login");
-			return null;
-		}
-		return Auth.of("/repos", req.getSession(), p);
-	}
-
-	@GET
-	@Path("/login")
 	public Viewable login(@Context HttpServletRequest req,
 			@Context HttpServletResponse res) {
 		if (AuthenticationFilter.isLoggedIn(req)) {
@@ -51,7 +39,6 @@ public class LoginService {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	@Path("/login")
 	public Object login(@Context HttpServletRequest req,
 			@FormParam("u") String u, @FormParam("p") String p,
 			@FormParam("t") String t, @Context UriInfo info) {
@@ -77,5 +64,4 @@ public class LoginService {
 		}
 		return Auth.of("/login", req.getSession());
 	}
-
 }

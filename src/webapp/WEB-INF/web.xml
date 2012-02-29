@@ -18,6 +18,14 @@
 			<param-value>org.koshinuke.App</param-value>
 		</init-param>
 		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.GZIPContentEncodingFilter</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.GZIPContentEncodingFilter</param-value>
+		</init-param>
+		<init-param>
 			<param-name>com.sun.jersey.spi.container.ResourceFilters</param-name>
 			<param-value>org.koshinuke.jersey.auth.AuthenticationFilterFactory org.koshinuke.jersey.auth.BasicAuthFilterFactory</param-value>
 		</init-param>

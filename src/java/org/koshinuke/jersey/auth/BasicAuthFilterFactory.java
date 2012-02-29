@@ -33,24 +33,26 @@ public class BasicAuthFilterFactory implements ResourceFilterFactory {
 			try {
 				String authorization = request.getRequestHeaders().getFirst(
 						HttpHeaders.AUTHORIZATION);
-				int space = authorization.indexOf(' ');
-				if (0 < space) {
-					String type = authorization.substring(0, space);
-					if ("Basic".equalsIgnoreCase(type)) {
-						String cred = authorization.substring(space + 1);
+				if (authorization != null) {
+					int space = authorization.indexOf(' ');
+					if (0 < space) {
+						String type = authorization.substring(0, space);
+						if ("Basic".equalsIgnoreCase(type)) {
+							String cred = authorization.substring(space + 1);
 
-						// TODO performance test.
-						cred = new String(Base64.decode(cred
-								.getBytes(Charsets.ISO_8859_1)),
-								Charsets.ISO_8859_1);
-						int i = cred.indexOf(':');
-						if (0 < i) {
-							String u = cred.substring(0, i);
-							String p = cred.substring(i + 1);
-							HttpServletRequest req = BasicAuthFilterFactory.this.requestInvoker
-									.get();
-							req.login(u, p);
-							return request;
+							// TODO performance test.
+							cred = new String(Base64.decode(cred
+									.getBytes(Charsets.ISO_8859_1)),
+									Charsets.ISO_8859_1);
+							int i = cred.indexOf(':');
+							if (0 < i) {
+								String u = cred.substring(0, i);
+								String p = cred.substring(i + 1);
+								HttpServletRequest req = BasicAuthFilterFactory.this.requestInvoker
+										.get();
+								req.login(u, p);
+								return request;
+							}
 						}
 					}
 				}

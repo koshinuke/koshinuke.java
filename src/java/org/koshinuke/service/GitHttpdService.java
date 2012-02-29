@@ -1,5 +1,8 @@
 package org.koshinuke.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -7,10 +10,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 import org.koshinuke.jersey.auth.BasicAuth;
 
 import com.sun.jersey.spi.resource.Singleton;
@@ -25,16 +31,32 @@ import com.sun.jersey.spi.resource.Singleton;
 @Path("/{project: ([\\w\\-\\+\\.]|%[0-9a-fA-F]{2})+}/{repository: ([\\w\\-\\+\\.]|%[0-9a-fA-F]{2})+}.git/")
 public class GitHttpdService {
 
-	/** Name of the git-upload-pack service. */
 	public static final String UPLOAD_PACK = "git-upload-pack";
-
-	/** Name of the git-receive-pack service. */
 	public static final String RECEIVE_PACK = "git-receive-pack";
 
 	static final String SUB_TYPE_UPD = "x-" + UPLOAD_PACK;
 	static final String SUB_TYPE_RCV = "x-" + RECEIVE_PACK;
 	static final String CT_UPD = "application/" + SUB_TYPE_UPD;
 	static final String CT_RCV = "application/" + SUB_TYPE_RCV;
+
+	Map<String, InfoRefsAction> actions = new HashMap<>(2);
+	{
+		this.actions.put(UPLOAD_PACK, new InfoRefsAction() {
+			@Override
+			public Response execute(String project, String repository)
+					throws ServiceNotEnabledException {
+				return GitHttpdService.this.uploadPackInfo(project, repository);
+			}
+		});
+		this.actions.put(RECEIVE_PACK, new InfoRefsAction() {
+			@Override
+			public Response execute(String project, String repository)
+					throws ServiceNotEnabledException {
+				return GitHttpdService.this
+						.receivePackInfo(project, repository);
+			}
+		});
+	}
 
 	@POST
 	@Path(UPLOAD_PACK)
@@ -59,7 +81,15 @@ public class GitHttpdService {
 	public Response infoRefs(@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@QueryParam("service") String service) {
-		return null;
+		InfoRefsAction action = this.actions.get(service);
+		try {
+			if (action != null) {
+				return action.execute(project, repository);
+			}
+		} catch (ServiceNotEnabledException e) {
+			throw new WebApplicationException(e, Status.FORBIDDEN);
+		}
+		return Response.status(Status.FORBIDDEN).build();
 	}
 
 	static final MediaType UPLOAD_PACK_INFO = new MediaType("application",
@@ -67,11 +97,13 @@ public class GitHttpdService {
 	static final MediaType RECEIVE_PACK_INFO = new MediaType("application",
 			SUB_TYPE_RCV + "-advertisement");
 
-	protected Response uploadPackInfo(String project, String repository) {
+	protected Response uploadPackInfo(String project, String repository)
+			throws ServiceNotEnabledException {
 		return null;
 	}
 
-	protected Response receivePackInfo(String project, String repository) {
+	protected Response receivePackInfo(String project, String repository)
+			throws ServiceNotEnabledException {
 		return null;
 	}
 

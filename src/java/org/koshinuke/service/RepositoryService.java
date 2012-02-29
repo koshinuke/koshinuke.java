@@ -17,6 +17,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
@@ -33,7 +34,6 @@ import org.koshinuke.model.RepositoryModel;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.representation.Form;
-import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.resource.Singleton;
 
 /**
@@ -70,13 +70,6 @@ public class RepositoryService {
 	}
 
 	@GET
-	@Produces(MediaType.TEXT_HTML)
-	public Viewable forwardToIndex(@Context HttpServletResponse res) {
-		ServletUtil.redirect(res, "/");
-		return null;
-	}
-
-	@GET
 	public List<RepositoryModel> listRepository() {
 		return this.git.listRepository();
 	}
@@ -88,7 +81,7 @@ public class RepositoryService {
 		if (action != null) {
 			return action.execute(p, form);
 		}
-		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
+		return Response.status(Status.FORBIDDEN).build();
 	}
 
 	protected Response initRepository(KoshinukePrincipal p, Form form) {

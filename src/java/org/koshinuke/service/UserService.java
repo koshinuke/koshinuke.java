@@ -15,13 +15,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.koshinuke.filter.AuthenticationFilter;
-import org.koshinuke.model.Auth;
+import org.koshinuke.jersey.auth.AuthenticationFilterFactory;
+import org.koshinuke.model.AuthModel;
 import org.koshinuke.util.ServletUtil;
 
 import com.sun.jersey.api.view.Viewable;
 import com.sun.jersey.spi.resource.Singleton;
 
+/**
+ * @author taichi
+ */
 @Singleton
 @Path("/login")
 @Produces(MediaType.TEXT_HTML)
@@ -30,11 +33,11 @@ public class UserService {
 	@GET
 	public Viewable login(@Context HttpServletRequest req,
 			@Context HttpServletResponse res) {
-		if (AuthenticationFilter.isLoggedIn(req)) {
+		if (AuthenticationFilterFactory.isLoggedIn(req)) {
 			ServletUtil.redirect(res, "/");
 			return null;
 		}
-		return Auth.of("/login", req.getSession());
+		return AuthModel.of("/login", req.getSession());
 	}
 
 	@POST
@@ -49,7 +52,7 @@ public class UserService {
 				if (session != null) {
 					session.invalidate();
 				}
-				AuthenticationFilter.setUserPrincipal(req);
+				AuthenticationFilterFactory.setUserPrincipal(req);
 				// HttpServletResponse#sendRedirectを使い、リダイレクト先としてコンテキストルートを指定すると、
 				// このリクエストを送信する際にはまだHttpSessionが存在しない為に、
 				// URLのセッションIDと/が隣合う不適切なLocationヘッダが生成されてしまうので、回避措置。
@@ -62,6 +65,6 @@ public class UserService {
 		} catch (ServletException e) {
 			// login failed
 		}
-		return Auth.of("/login", req.getSession());
+		return AuthModel.of("/login", req.getSession());
 	}
 }

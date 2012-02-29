@@ -6,7 +6,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 
-import org.koshinuke.model.Auth;
+import org.koshinuke.model.AuthModel;
 import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.util.ServletUtil;
 
@@ -27,7 +27,7 @@ public class RootService {
 			ServletUtil.redirect(res, "/login");
 			return null;
 		}
-		return Auth.of("/repos", req.getSession(), p);
+		return AuthModel.of("/repos", req.getSession(), p);
 	}
 
 }

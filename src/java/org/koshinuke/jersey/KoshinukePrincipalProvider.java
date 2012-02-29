@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
 
-import org.koshinuke.filter.AuthenticationFilter;
+import org.koshinuke.jersey.auth.AuthenticationFilterFactory;
 import org.koshinuke.model.KoshinukePrincipal;
 
 import com.sun.jersey.core.spi.component.ComponentContext;
@@ -42,7 +42,7 @@ public class KoshinukePrincipalProvider implements
 			public KoshinukePrincipal getValue() {
 				HttpServletRequest request = KoshinukePrincipalProvider.this.requestInvoker
 						.get();
-				return AuthenticationFilter.getUserPrincipal(request);
+				return AuthenticationFilterFactory.getUserPrincipal(request);
 			}
 		};
 	}

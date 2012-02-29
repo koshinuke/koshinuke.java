@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
+import org.koshinuke.jersey.auth.Auth;
 import org.koshinuke.logic.GitDelegate;
 import org.koshinuke.model.BlameModel;
 import org.koshinuke.model.BlobModel;
@@ -38,13 +39,13 @@ import com.sun.jersey.spi.resource.Singleton;
 /**
  * @author taichi
  */
+@Auth
 @Singleton
 @Path("/api/1.0")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
 
-	static final Logger LOG = Logger.getLogger(RepositoryService.class
-			.getName());
+	final Logger LOG = Logger.getLogger(RepositoryService.class.getName());
 
 	Map<String, FormAction> command = new HashMap<>();
 	{
@@ -90,7 +91,7 @@ public class RepositoryService {
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
-	public Response initRepository(KoshinukePrincipal p, Form form) {
+	protected Response initRepository(KoshinukePrincipal p, Form form) {
 		String name = form.getFirst("rn");
 		String readme = form.getFirst("rr");
 		if (StringUtils.isEmptyOrNull(name) == false
@@ -104,7 +105,7 @@ public class RepositoryService {
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
-	public Response cloneRepository(KoshinukePrincipal p, Form form) {
+	protected Response cloneRepository(KoshinukePrincipal p, Form form) {
 		String uri = form.getFirst("uri");
 		String un = form.getFirst("un");
 		String up = form.getFirst("up");

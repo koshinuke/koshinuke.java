@@ -72,7 +72,7 @@ import com.google.common.io.NullOutputStream;
  */
 public class GitDelegate {
 
-	static final Logger LOG = Logger.getLogger(GitDelegate.class.getName());
+	final Logger LOG = Logger.getLogger(GitDelegate.class.getName());
 
 	final Configuration config;
 
@@ -99,7 +99,7 @@ public class GitDelegate {
 				}
 			}
 		} catch (IOException e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
+			this.LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return repos;
 	}
@@ -115,7 +115,7 @@ public class GitDelegate {
 						}
 					});
 		} catch (IORuntimeException e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
+			this.LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return null;
 	}
@@ -220,7 +220,7 @@ public class GitDelegate {
 				return true;
 			}
 		} catch (Exception e) {
-			LOG.log(Level.WARNING, e.getMessage(), e);
+			this.LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return false;
 	}
@@ -302,7 +302,7 @@ public class GitDelegate {
 					}
 				} catch (IOException e) {
 					// do nothing.
-					LOG.log(Level.WARNING, e.getMessage(), e);
+					this.LOG.log(Level.WARNING, e.getMessage(), e);
 				}
 			}
 		} else {
@@ -798,7 +798,7 @@ public class GitDelegate {
 			try {
 				return GitUtil.handleLocal(path, handler);
 			} catch (IORuntimeException e) {
-				LOG.log(Level.WARNING, e.getMessage(), e);
+				this.LOG.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
 		return null;

@@ -16,8 +16,6 @@ import com.google.common.base.Charsets;
 import com.google.common.net.HttpHeaders;
 import com.sun.jersey.api.model.AbstractMethod;
 import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import com.sun.jersey.spi.container.ContainerResponseFilter;
 import com.sun.jersey.spi.container.ResourceFilter;
 import com.sun.jersey.spi.container.ResourceFilterFactory;
 
@@ -29,18 +27,7 @@ public class BasicAuthFilterFactory implements ResourceFilterFactory {
 	@Context
 	ThreadLocal<HttpServletRequest> requestInvoker;
 
-	class BasicAuthenticationFilter implements ResourceFilter,
-			ContainerRequestFilter {
-		@Override
-		public ContainerRequestFilter getRequestFilter() {
-			return this;
-		}
-
-		@Override
-		public ContainerResponseFilter getResponseFilter() {
-			return null;
-		}
-
+	class BasicAuthenticationFilter extends AbstractRequestFilter {
 		@Override
 		public ContainerRequest filter(ContainerRequest request) {
 			try {

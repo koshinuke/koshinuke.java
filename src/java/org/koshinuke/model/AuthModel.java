@@ -9,27 +9,27 @@ import com.sun.jersey.api.view.Viewable;
 /**
  * @author taichi
  */
-public class Auth {
+public class AuthModel {
 
 	public final String csrf;
 
 	public final String name;
 
-	private Auth(String token) {
+	private AuthModel(String token) {
 		this.csrf = token;
 		this.name = "";
 	}
 
-	private Auth(String token, String name) {
+	private AuthModel(String token, String name) {
 		this.csrf = token;
 		this.name = name;
 	}
 
 	public static Viewable of(String path, HttpSession session) {
-		return new Viewable(path, new Auth(session.getId()));
+		return new Viewable(path, new AuthModel(session.getId()));
 	}
 
 	public static Viewable of(String path, HttpSession session, Principal p) {
-		return new Viewable(path, new Auth(session.getId(), p.getName()));
+		return new Viewable(path, new AuthModel(session.getId(), p.getName()));
 	}
 }

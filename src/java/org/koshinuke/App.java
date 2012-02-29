@@ -1,6 +1,6 @@
 package org.koshinuke;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,6 +12,7 @@ import org.koshinuke.jackson.KoshinukeModule;
 import org.koshinuke.jackson.LowerCaseStrategy;
 import org.koshinuke.jersey.ConfigurationProvider;
 import org.koshinuke.jersey.KoshinukePrincipalProvider;
+import org.koshinuke.jersey.auth.AuthenticationFilterFactory;
 import org.koshinuke.jersey.auth.BasicAuthFilterFactory;
 import org.koshinuke.service.GitHttpdService;
 import org.koshinuke.service.RepositoryService;
@@ -55,6 +56,7 @@ public class App extends DefaultResourceConfig {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public List getResourceFilterFactories() {
-		return Collections.singletonList(BasicAuthFilterFactory.class);
+		return Arrays.asList(AuthenticationFilterFactory.class,
+				BasicAuthFilterFactory.class);
 	}
 }

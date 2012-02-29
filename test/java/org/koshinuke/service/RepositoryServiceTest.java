@@ -108,7 +108,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 	@Test
 	public void testListNoRepositories() throws Exception {
-		List<RepositoryModel> list = this.resource().path("/dynamic")
+		List<RepositoryModel> list = this.resource().path("/api/1.0")
 				.accept(MediaType.APPLICATION_JSON_TYPE)
 				.get(new GenericType<List<RepositoryModel>>() {
 				});
@@ -125,7 +125,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		form.add("rn", path);
 		form.add("rr", readme);
 
-		List<RepositoryModel> list = this.resource().path("/dynamic")
+		List<RepositoryModel> list = this.resource().path("/api/1.0")
 				.accept(MediaType.APPLICATION_JSON_TYPE)
 				.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
 				.post(new GenericType<List<RepositoryModel>>() {
@@ -184,7 +184,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testTree() throws Exception {
 		this.cloneTestRepo();
-		this.get(this.resource(), "dynamic/proj/repo/tree/master");
+		this.get(this.resource(), "api/1.0/proj/repo/tree/master");
 	}
 
 	@Test
@@ -193,7 +193,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		List<NodeModel> list = this.get(
 				this.resource().queryParam("offset", "1")
 						.queryParam("limit", "4"),
-				"dynamic/proj/repo/tree/branchbranch/");
+				"api/1.0/proj/repo/tree/branchbranch/");
 		assertEquals(4, list.size());
 		assertEquals(0, list.get(1).getTimestamp());
 		assertEquals(1, list.get(1).getChildren());
@@ -205,11 +205,11 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testTreeWithContext() throws Exception {
 		this.cloneTestRepo();
 		List<NodeModel> list = this.get(this.resource(),
-				"dynamic/proj/repo/tree/branchbranch/moge/");
+				"api/1.0/proj/repo/tree/branchbranch/moge/");
 		assertEquals(3, list.size());
 
 		list = this.get(this.resource(),
-				"dynamic/proj/repo/tree/branchbranch/hoge/piyo");
+				"api/1.0/proj/repo/tree/branchbranch/hoge/piyo");
 		assertEquals(2, list.size());
 		assertFalse(0 == list.get(0).getTimestamp());
 		assertEquals(0, list.get(0).getChildren());
@@ -220,7 +220,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testTreeWithTag() throws Exception {
 		this.cloneTestRepo();
 		List<NodeModel> list = this.get(this.resource(),
-				"dynamic/proj/repo/tree/beta/0.0.1");
+				"api/1.0/proj/repo/tree/beta/0.0.1");
 		assertEquals(4, list.size());
 	}
 
@@ -249,14 +249,14 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testBlob() throws Exception {
 		this.cloneTestRepo();
 		BlobModel bm = this.resource()
-				.path("/dynamic/proj/repo/blob/master/README")
+				.path("/api/1.0/proj/repo/blob/master/README")
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
 		assertNotNull(bm);
 		assertEquals("readme readme", bm.getContent());
 		assertEquals("initial commit", bm.getMessage());
 
 		bm = this.resource()
-				.path("/dynamic/proj/repo/blob/test/hoge/hoge/moge/piro.txt")
+				.path("/api/1.0/proj/repo/blob/test/hoge/hoge/moge/piro.txt")
 				.accept(MediaType.APPLICATION_JSON_TYPE).get(BlobModel.class);
 		assertNotNull(bm);
 		assertEquals("gyappa gyappa", bm.getContent());
@@ -269,7 +269,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testModifyBlob() throws Exception {
 		this.cloneTestRepo();
 		{
-			String path = "/dynamic/proj/repo/blob/master/README";
+			String path = "/api/1.0/proj/repo/blob/master/README";
 			BlobModel bm = this.getBlob(path);
 
 			BlobModel newone = new BlobModel(bm);
@@ -278,7 +278,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 			this.testModifyBlob(path, newone);
 		}
-		String path = "/dynamic/proj/repo/blob/test/hoge/hoge/moge/piro.txt";
+		String path = "/api/1.0/proj/repo/blob/test/hoge/hoge/moge/piro.txt";
 		BlobModel bm = this.getBlob(path);
 		BlobModel newone = new BlobModel(bm);
 		newone.setMessage("mod mod");
@@ -290,7 +290,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testModiryErrorBecauseTagCannotModify() throws Exception {
 		this.cloneTestRepo();
-		String path = "/dynamic/proj/repo/blob/beta/0.0.2/myomyo/muga/piyopiyo.txt";
+		String path = "/api/1.0/proj/repo/blob/beta/0.0.2/myomyo/muga/piyopiyo.txt";
 		BlobModel bm = this.getBlob(path);
 		BlobModel newone = new BlobModel(bm);
 		newone.setMessage("mod mod");
@@ -326,7 +326,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testHistories() throws Exception {
 		this.setUpTestHistories(this.cloneTestRepo());
-		String path = "/dynamic/proj/repo/history";
+		String path = "/api/1.0/proj/repo/history";
 		List<BranchHistoryModel> list = this.resource().path(path)
 				.get(new GenericType<List<BranchHistoryModel>>() {
 				});
@@ -381,7 +381,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testGetCommits() throws Exception {
 		this.setUpTestHistories(this.cloneTestRepo());
-		String path = "/dynamic/proj/repo/commits/test/moge";
+		String path = "/api/1.0/proj/repo/commits/test/moge";
 		List<CommitModel> list = this.resource().path(path)
 				.get(new GenericType<List<CommitModel>>() {
 				});
@@ -446,7 +446,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Test
 	public void testDiff() throws Exception {
 		String commitid = this.setUpTestDiff(this.cloneTestRepo());
-		String path = "/dynamic/proj/repo/commit/" + commitid;
+		String path = "/api/1.0/proj/repo/commit/" + commitid;
 		DiffModel model = this.resource().path(path).get(DiffModel.class);
 		assertNotNull(model);
 		assertEquals(commitid, model.getCommit().name());
@@ -470,7 +470,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	public void testBlame() throws Exception {
 		this.setUpTestDiff(this.cloneTestRepo());
 		List<BlameModel> list = this.resource()
-				.path("/dynamic/proj/repo/blame/test/hoge/hoge/moge/piro.txt")
+				.path("/api/1.0/proj/repo/blame/test/hoge/hoge/moge/piro.txt")
 				.accept(MediaType.APPLICATION_JSON_TYPE)
 				.get(new GenericType<List<BlameModel>>() {
 				});

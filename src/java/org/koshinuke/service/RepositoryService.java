@@ -39,7 +39,7 @@ import com.sun.jersey.spi.resource.Singleton;
  * @author taichi
  */
 @Singleton
-@Path("/dynamic")
+@Path("/api/1.0")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepositoryService {
 

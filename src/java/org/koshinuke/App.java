@@ -1,9 +1,9 @@
 package org.koshinuke;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+
+import javax.ws.rs.core.Application;
 
 import org.codehaus.jackson.JsonGenerator.Feature;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
@@ -12,19 +12,15 @@ import org.koshinuke.jackson.KoshinukeModule;
 import org.koshinuke.jackson.LowerCaseStrategy;
 import org.koshinuke.jersey.ConfigurationProvider;
 import org.koshinuke.jersey.KoshinukePrincipalProvider;
-import org.koshinuke.jersey.auth.AuthenticationFilterFactory;
-import org.koshinuke.jersey.auth.BasicAuthFilterFactory;
 import org.koshinuke.service.GitHttpdService;
 import org.koshinuke.service.RepositoryService;
 import org.koshinuke.service.RootService;
 import org.koshinuke.service.UserService;
 
-import com.sun.jersey.api.core.DefaultResourceConfig;
-
 /**
  * @author taichi
  */
-public class App extends DefaultResourceConfig {
+public class App extends Application {
 
 	@Override
 	public Set<Class<?>> getClasses() {
@@ -51,12 +47,5 @@ public class App extends DefaultResourceConfig {
 		om.configure(Feature.ESCAPE_NON_ASCII, true);
 		om.registerModule(new KoshinukeModule());
 		return new JacksonJsonProvider(om);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@Override
-	public List getResourceFilterFactories() {
-		return Arrays.asList(AuthenticationFilterFactory.class,
-				BasicAuthFilterFactory.class);
 	}
 }

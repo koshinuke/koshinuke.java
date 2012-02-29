@@ -18,6 +18,10 @@
 			<param-value>org.koshinuke.App</param-value>
 		</init-param>
 		<init-param>
+			<param-name>com.sun.jersey.spi.container.ResourceFilters</param-name>
+			<param-value>org.koshinuke.jersey.auth.AuthenticationFilterFactory org.koshinuke.jersey.auth.BasicAuthFilterFactory</param-value>
+		</init-param>
+		<init-param>
 			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
 			<param-value>/[sS][tT][aA][tT][iI][cC]/.*</param-value>
 		</init-param>

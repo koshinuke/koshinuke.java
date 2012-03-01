@@ -2,6 +2,8 @@ package org.koshinuke.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.Principal;
 import java.util.Calendar;
 import java.util.Date;
@@ -17,6 +19,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -39,6 +42,7 @@ import org.koshinuke.jgit.server.EachRefPack;
 import org.koshinuke.util.GitUtil;
 
 import com.google.common.base.Function;
+import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.resource.Singleton;
 
 /**
@@ -89,19 +93,76 @@ public class GitHttpdService {
 	@POST
 	@Path(UPLOAD_PACK)
 	@Consumes(CT_UPD + "-request")
-	@Produces(CT_UPD + "-result")
-	public Response uploadPack(@PathParam("project") String project,
+	public Response uploadPack(final @Context HttpContext context,
+			final @Context HttpServletResponse response,
+			@PathParam("project") String project,
 			@PathParam("repository") String repository) {
-		return null;
+		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
+				repository, new Function<Repository, Response>() {
+					@Override
+					public Response apply(Repository input) {
+						if (GitHttpdService.this.isEnabledUploadPack(input)) {
+							UploadPack pack = GitHttpdService.this
+									.makeUploadPack(input);
+							try {
+								GitHttpdService.this.noCache(response);
+								response.addHeader(HttpHeaders.CONTENT_TYPE,
+										CT_UPD + "-result");
+								OutputStream out = response.getOutputStream();
+								pack.upload(
+										context.getRequest().getEntity(
+												InputStream.class), out, null);
+								out.flush();
+							} catch (IOException e) {
+								throw new WebApplicationException(e);
+							}
+							return null;
+						}
+						return Response.status(Status.FORBIDDEN).build();
+					}
+				});
+	}
+
+	protected void noCache(HttpServletResponse response) {
+		response.addHeader("Expires", "Fri, 01 Jan 1980 00:00:00 GMT");
+		response.addHeader("Pragma", "no-cache");
+		response.addHeader("Cache-Control",
+				"no-cache, max-age=0, must-revalidate");
 	}
 
 	@POST
 	@Path(RECEIVE_PACK)
 	@Consumes(CT_RCV + "-request")
-	@Produces(CT_RCV + "-result")
-	public Response receivePack(@PathParam("project") String project,
+	public Response receivePack(final @Context HttpContext context,
+			final @Context HttpServletRequest request,
+			final @Context HttpServletResponse response,
+			@PathParam("project") String project,
 			@PathParam("repository") String repository) {
-		return null;
+		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
+				repository, new Function<Repository, Response>() {
+					@Override
+					public Response apply(Repository input) {
+						if (GitHttpdService.this.isEnabledReceivePack(input)) {
+							ReceivePack pack = GitHttpdService.this
+									.makeReceivePack(request, input);
+							try {
+								pack.setBiDirectionalPipe(false);
+								GitHttpdService.this.noCache(response);
+								response.addHeader(HttpHeaders.CONTENT_TYPE,
+										CT_RCV + "-result");
+								OutputStream out = response.getOutputStream();
+								pack.receive(
+										context.getRequest().getEntity(
+												InputStream.class), out, null);
+								out.flush();
+							} catch (IOException e) {
+								throw new WebApplicationException(e);
+							}
+							return null;
+						}
+						return Response.status(Status.FORBIDDEN).build();
+					}
+				});
 	}
 
 	@GET
@@ -140,10 +201,10 @@ public class GitHttpdService {
 				repository, new Function<Repository, Response>() {
 					@Override
 					public Response apply(Repository input) {
-						if (input.getConfig().getBoolean("http", "uploadpack",
-								true)) {
-							return noCache(new UploadPack(input)).type(
-									UPLOAD_PACK_INFO).build();
+						if (GitHttpdService.this.isEnabledUploadPack(input)) {
+							return noCache(
+									GitHttpdService.this.makeUploadPack(input))
+									.type(UPLOAD_PACK_INFO).build();
 						}
 						return Response.status(Status.FORBIDDEN).build();
 					}
@@ -156,13 +217,9 @@ public class GitHttpdService {
 				repository, new Function<Repository, Response>() {
 					@Override
 					public Response apply(Repository input) {
-						if (input.getConfig().getBoolean("http", "receivepack",
-								false)) {
-							ReceivePack rp = new ReceivePack(input);
-							// TODO 送信ユーザのきちんとした情報を設定する。
-							Principal p = req.getUserPrincipal();
-							rp.setRefLogIdent(new PersonIdent(p.getName(), p
-									.getName() + "@" + req.getRemoteHost()));
+						if (GitHttpdService.this.isEnabledReceivePack(input)) {
+							ReceivePack rp = GitHttpdService.this
+									.makeReceivePack(req, input);
 							return noCache(rp).type(UPLOAD_PACK_INFO).build();
 						}
 						return Response.status(Status.FORBIDDEN).build();
@@ -272,10 +329,6 @@ public class GitHttpdService {
 				});
 	}
 
-	protected boolean isEnabledGetanyfile(Repository repository) {
-		return repository.getConfig().getBoolean("http", "getanyfile", true);
-	}
-
 	protected Response buildFileResponse(String project, String repository,
 			final String path, final Function<File, Response> handler) {
 		return this.buildResponse(project, repository,
@@ -305,5 +358,33 @@ public class GitHttpdService {
 						return handler.apply(input);
 					}
 				});
+	}
+
+	protected boolean isEnabledGetanyfile(Repository repository) {
+		return repository.getConfig().getBoolean("http", "getanyfile", true);
+	}
+
+	protected boolean isEnabledUploadPack(Repository input) {
+		return input.getConfig().getBoolean("http", "uploadpack", true);
+	}
+
+	protected boolean isEnabledReceivePack(Repository input) {
+		return input.getConfig().getBoolean("http", "receivepack", false);
+	}
+
+	protected UploadPack makeUploadPack(Repository input) {
+		UploadPack pack = new UploadPack(input);
+		pack.setBiDirectionalPipe(false);
+		return pack;
+	}
+
+	protected ReceivePack makeReceivePack(HttpServletRequest req,
+			Repository input) {
+		ReceivePack rp = new ReceivePack(input);
+		// TODO 送信ユーザのきちんとした情報を設定する。
+		Principal p = req.getUserPrincipal();
+		rp.setRefLogIdent(new PersonIdent(p.getName(), p.getName() + "@"
+				+ req.getRemoteHost()));
+		return rp;
 	}
 }

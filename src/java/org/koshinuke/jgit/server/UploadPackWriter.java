@@ -22,7 +22,6 @@ public class UploadPackWriter extends AbstractPackInfoWriter<UploadPack> {
 	protected void advertise(UploadPack pack, RefAdvertiser advertiser)
 			throws IOException {
 		try {
-			pack.setBiDirectionalPipe(false);
 			pack.sendAdvertisedRefs(advertiser);
 		} finally {
 			pack.getRevWalk().release();

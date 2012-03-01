@@ -1,5 +1,6 @@
 package org.koshinuke.service;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 /**
@@ -7,5 +8,6 @@ import javax.ws.rs.core.Response;
  */
 public interface InfoRefsAction {
 
-	Response execute(String project, String repository);
+	Response execute(HttpServletRequest request, String project,
+			String repository);
 }

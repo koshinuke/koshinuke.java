@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.koshinuke.jersey.Csrf;
 import org.koshinuke.jersey.auth.AuthenticationFilterFactory;
 import org.koshinuke.model.AuthModel;
 import org.koshinuke.util.ServletUtil;
@@ -40,6 +41,7 @@ public class UserService {
 		return AuthModel.of("/login", req.getSession());
 	}
 
+	@Csrf
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Object login(@Context HttpServletRequest req,

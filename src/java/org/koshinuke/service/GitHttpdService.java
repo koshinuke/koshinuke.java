@@ -2,11 +2,13 @@ package org.koshinuke.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -25,11 +27,15 @@ import javax.ws.rs.core.Response.Status;
 
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectDatabase;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.ObjectDirectory;
 import org.eclipse.jgit.storage.file.PackFile;
+import org.eclipse.jgit.transport.ReceivePack;
+import org.eclipse.jgit.transport.UploadPack;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.auth.BasicAuth;
+import org.koshinuke.jgit.server.EachRefPack;
 import org.koshinuke.util.GitUtil;
 
 import com.google.common.base.Function;
@@ -59,15 +65,17 @@ public class GitHttpdService {
 	{
 		this.actions.put(UPLOAD_PACK, new InfoRefsAction() {
 			@Override
-			public Response execute(String project, String repository) {
+			public Response execute(HttpServletRequest req, String project,
+					String repository) {
 				return GitHttpdService.this.uploadPackInfo(project, repository);
 			}
 		});
 		this.actions.put(RECEIVE_PACK, new InfoRefsAction() {
 			@Override
-			public Response execute(String project, String repository) {
-				return GitHttpdService.this
-						.receivePackInfo(project, repository);
+			public Response execute(HttpServletRequest req, String project,
+					String repository) {
+				return GitHttpdService.this.receivePackInfo(req, project,
+						repository);
 			}
 		});
 	}
@@ -76,7 +84,6 @@ public class GitHttpdService {
 
 	public GitHttpdService(@Context Configuration config) {
 		this.config = config;
-
 	}
 
 	@POST
@@ -99,29 +106,68 @@ public class GitHttpdService {
 
 	@GET
 	@Path(Constants.INFO_REFS)
-	@Produces("text/plain; charset=utf-8")
-	public Response infoRefs(@PathParam("project") String project,
+	public Response infoRefs(@Context HttpServletRequest request,
+			@PathParam("project") String project,
 			@PathParam("repository") String repository,
 			@QueryParam("service") String service,
 			@Context HttpServletResponse response) throws IOException {
 		InfoRefsAction action = this.actions.get(service);
 		if (action != null) {
-			return action.execute(project, repository);
+			return action.execute(request, project, repository);
 		}
-		return Response.status(Status.FORBIDDEN).build();
+		return this.buildResponse(project, repository,
+				new Function<Repository, Response>() {
+					@Override
+					public Response apply(Repository input) {
+						return noCache(new EachRefPack(input)).type(
+								MediaType.TEXT_PLAIN).build();
+					}
+				});
 	}
 
-	static final MediaType UPLOAD_PACK_INFO = new MediaType("application",
-			SUB_TYPE_UPD + "-advertisement");
-	static final MediaType RECEIVE_PACK_INFO = new MediaType("application",
-			SUB_TYPE_RCV + "-advertisement");
+	public static final MediaType UPLOAD_PACK_INFO = new MediaType(
+			"application", SUB_TYPE_UPD + "-advertisement");
+	public static final String CT_UPLOADPACK = "application/" + SUB_TYPE_UPD
+			+ "-advertisement";
+
+	public static final MediaType RECEIVE_PACK_INFO = new MediaType(
+			"application", SUB_TYPE_RCV + "-advertisement");
+	public static final String CT_RECEIVE_PACK = "application/" + SUB_TYPE_RCV
+			+ "-advertisement";
 
 	protected Response uploadPackInfo(String project, String repository) {
-		return null;
+		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
+				repository, new Function<Repository, Response>() {
+					@Override
+					public Response apply(Repository input) {
+						if (input.getConfig().getBoolean("http", "uploadpack",
+								true)) {
+							return noCache(new UploadPack(input)).type(
+									UPLOAD_PACK_INFO).build();
+						}
+						return Response.status(Status.FORBIDDEN).build();
+					}
+				});
 	}
 
-	protected Response receivePackInfo(String project, String repository) {
-		return null;
+	protected Response receivePackInfo(final HttpServletRequest req,
+			String project, String repository) {
+		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
+				repository, new Function<Repository, Response>() {
+					@Override
+					public Response apply(Repository input) {
+						if (input.getConfig().getBoolean("http", "receivepack",
+								false)) {
+							ReceivePack rp = new ReceivePack(input);
+							// TODO 送信ユーザのきちんとした情報を設定する。
+							Principal p = req.getUserPrincipal();
+							rp.setRefLogIdent(new PersonIdent(p.getName(), p
+									.getName() + "@" + req.getRemoteHost()));
+							return noCache(rp).type(UPLOAD_PACK_INFO).build();
+						}
+						return Response.status(Status.FORBIDDEN).build();
+					}
+				});
 	}
 
 	@GET
@@ -134,14 +180,15 @@ public class GitHttpdService {
 				new Function<File, Response>() {
 					@Override
 					public Response apply(File input) {
-						return noCache(Status.OK).entity(input).build();
+						return noCache(input).build();
 					}
 				});
 	}
 
-	public static ResponseBuilder noCache(Status status) {
+	public static ResponseBuilder noCache(Object entity) {
 		return Response
-				.status(status)
+				.ok()
+				.entity(entity)
 				.expires(new Date(0))
 				.header("Pragma", "no-cache")
 				.cacheControl(
@@ -151,6 +198,7 @@ public class GitHttpdService {
 
 	@GET
 	@Path("objects/info/packs")
+	@Produces("text/plain; charset=utf-8")
 	public Response infoPacks(@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		return this.buildResponse(project, repository,
@@ -168,8 +216,7 @@ public class GitHttpdService {
 							}
 						}
 						stb.append('\n');
-						return noCache(Status.OK).entity(stb.toString())
-								.build();
+						return noCache(stb.toString()).build();
 					}
 				});
 	}

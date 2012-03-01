@@ -12,6 +12,9 @@ import org.koshinuke.jackson.KoshinukeModule;
 import org.koshinuke.jackson.LowerCaseStrategy;
 import org.koshinuke.jersey.ConfigurationProvider;
 import org.koshinuke.jersey.KoshinukePrincipalProvider;
+import org.koshinuke.jgit.server.EachRefPackWriter;
+import org.koshinuke.jgit.server.ReceivePackWriter;
+import org.koshinuke.jgit.server.UploadPackWriter;
 import org.koshinuke.service.GitHttpdService;
 import org.koshinuke.service.RepositoryService;
 import org.koshinuke.service.RootService;
@@ -38,6 +41,9 @@ public class App extends Application {
 	public Set<Object> getSingletons() {
 		HashSet<Object> singletons = new HashSet<Object>();
 		singletons.add(makeJsonProvider());
+		singletons.add(new EachRefPackWriter());
+		singletons.add(new UploadPackWriter());
+		singletons.add(new ReceivePackWriter());
 		return singletons;
 	}
 

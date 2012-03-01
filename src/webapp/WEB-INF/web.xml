@@ -7,10 +7,6 @@
 		<filter-class>org.koshinuke.filter.EncodingFilter</filter-class>
 	</filter>
 	<filter>
-		<filter-name>csrf</filter-name>
-		<filter-class>org.koshinuke.filter.CsrfFilter</filter-class>
-	</filter>
-	<filter>
 		<filter-name>Jeresy</filter-name>
 		<filter-class>com.sun.jersey.spi.container.servlet.ServletContainer</filter-class>
 		<init-param>
@@ -27,7 +23,7 @@
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.spi.container.ResourceFilters</param-name>
-			<param-value>org.koshinuke.jersey.auth.AuthenticationFilterFactory org.koshinuke.jersey.auth.BasicAuthFilterFactory</param-value>
+			<param-value>org.koshinuke.jersey.CsrfFilterFactory org.koshinuke.jersey.auth.AuthenticationFilterFactory org.koshinuke.jersey.auth.BasicAuthFilterFactory</param-value>
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
@@ -38,10 +34,6 @@
 		<filter-name>enc</filter-name>
 		<url-pattern>/api/*</url-pattern>
 		<url-pattern>/login</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>csrf</filter-name>
-		<url-pattern>/api/*</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>Jeresy</filter-name>

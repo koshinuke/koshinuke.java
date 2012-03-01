@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.eclipse.jgit.util.StringUtils;
 import org.koshinuke.conf.Configuration;
+import org.koshinuke.jersey.Csrf;
 import org.koshinuke.jersey.auth.Auth;
 import org.koshinuke.logic.GitDelegate;
 import org.koshinuke.model.BlameModel;
@@ -74,6 +75,7 @@ public class RepositoryService {
 		return this.git.listRepository();
 	}
 
+	@Csrf
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Response executeCommand(@Context KoshinukePrincipal p, Form form) {
@@ -151,6 +153,7 @@ public class RepositoryService {
 		return Response.ok(blob).build();
 	}
 
+	@Csrf
 	@POST
 	@Path("/{project}/{repository}/blob/" + REV_PART)
 	@Consumes(MediaType.APPLICATION_JSON)

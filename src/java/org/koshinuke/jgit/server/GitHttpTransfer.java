@@ -12,11 +12,18 @@ import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
 import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 import org.eclipse.jgit.transport.resolver.UploadPackFactory;
+import org.koshinuke.conf.Configuration;
 
 /**
  * @author taichi
  */
 public class GitHttpTransfer {
+
+	protected Configuration config;
+
+	public GitHttpTransfer(Configuration config) {
+		this.config = config;
+	}
 
 	protected UploadPackFactory<HttpServletRequest> uploadPackFactory = new UploadPackFactory<HttpServletRequest>() {
 		@Override
@@ -46,4 +53,5 @@ public class GitHttpTransfer {
 			throw new ServiceNotEnabledException();
 		}
 	};
+
 }

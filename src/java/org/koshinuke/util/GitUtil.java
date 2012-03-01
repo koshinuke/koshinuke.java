@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +30,15 @@ public class GitUtil {
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+	}
+
+	public static <T> T handleLocal(Path root, String project,
+			String repository, Function<Repository, T> handler) {
+		Path path = root.resolve(Paths.get(project, repository));
+		if (java.nio.file.Files.exists(path)) {
+			return GitUtil.handleLocal(path, handler);
+		}
+		return null;
 	}
 
 	public static <R> R handleLocal(Path path, Function<Repository, R> fn) {

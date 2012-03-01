@@ -792,16 +792,8 @@ public class GitDelegate {
 
 	protected <T> T handleLocal(String project, String repository,
 			Function<Repository, T> handler) {
-		Path path = this.config.getRepositoryRootDir().resolve(project)
-				.resolve(repository);
-		if (java.nio.file.Files.exists(path)) {
-			try {
-				return GitUtil.handleLocal(path, handler);
-			} catch (IORuntimeException e) {
-				this.LOG.log(Level.WARNING, e.getMessage(), e);
-			}
-		}
-		return null;
+		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
+				repository, handler);
 	}
 
 	public List<CommitModel> getCommits(String project, String repository,

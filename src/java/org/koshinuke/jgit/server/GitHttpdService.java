@@ -1,4 +1,4 @@
-package org.koshinuke.service;
+package org.koshinuke.jgit.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +38,6 @@ import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.UploadPack;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.auth.BasicAuth;
-import org.koshinuke.jgit.server.EachRefPack;
 import org.koshinuke.util.GitUtil;
 
 import com.google.common.base.Function;
@@ -364,12 +363,12 @@ public class GitHttpdService {
 		return repository.getConfig().getBoolean("http", "getanyfile", true);
 	}
 
-	protected boolean isEnabledUploadPack(Repository input) {
-		return input.getConfig().getBoolean("http", "uploadpack", true);
+	protected boolean isEnabledUploadPack(Repository repository) {
+		return repository.getConfig().getBoolean("http", "uploadpack", true);
 	}
 
-	protected boolean isEnabledReceivePack(Repository input) {
-		return input.getConfig().getBoolean("http", "receivepack", false);
+	protected boolean isEnabledReceivePack(Repository repository) {
+		return repository.getConfig().getBoolean("http", "receivepack", false);
 	}
 
 	protected UploadPack makeUploadPack(Repository input) {

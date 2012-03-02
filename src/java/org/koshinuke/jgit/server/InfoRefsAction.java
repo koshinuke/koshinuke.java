@@ -1,4 +1,4 @@
-package org.koshinuke.service;
+package org.koshinuke.jgit.server;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;

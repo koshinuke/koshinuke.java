@@ -6,7 +6,6 @@ import javax.ws.rs.ext.Provider;
 
 import org.eclipse.jgit.transport.RefAdvertiser;
 import org.eclipse.jgit.transport.UploadPack;
-import org.koshinuke.service.GitHttpdService;
 
 /**
  * @author taichi

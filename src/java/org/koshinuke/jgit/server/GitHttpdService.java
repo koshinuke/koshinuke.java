@@ -108,9 +108,9 @@ public class GitHttpdService {
 								response.addHeader(HttpHeaders.CONTENT_TYPE,
 										CT_UPD + "-result");
 								OutputStream out = response.getOutputStream();
-								pack.upload(
-										context.getRequest().getEntity(
-												InputStream.class), out, null);
+								InputStream in = context.getRequest()
+										.getEntity(InputStream.class);
+								pack.upload(in, out, null);
 								out.flush();
 							} catch (IOException e) {
 								throw new WebApplicationException(e);

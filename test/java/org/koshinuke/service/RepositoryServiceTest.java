@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,12 +26,10 @@ import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke.App;
 import org.koshinuke._;
-import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.model.BlameModel;
@@ -59,8 +56,6 @@ import com.sun.jersey.api.representation.Form;
  * @author taichi
  */
 public class RepositoryServiceTest extends KoshinukeTest {
-
-	Configuration config;
 
 	public static class AP extends Application {
 		@Override
@@ -89,21 +84,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		this.config = new TestConfigurationtProvider().getValue();
-		this.deleteDirs();
-	}
-
-	public void deleteDirs() throws IOException {
-		File bin = new File("bin");
-		for (File test : bin.listFiles(new FilenameFilter() {
-			@Override
-			public boolean accept(File dir, String name) {
-				return name.startsWith("test");
-			}
-		})) {
-			FileUtils
-					.delete(test, FileUtils.RECURSIVE | FileUtils.SKIP_MISSING);
-		}
+		deleteDirs();
 	}
 
 	@Test
@@ -139,7 +120,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		assertEquals(1, rm.getBranches().size());
 		assertEquals("master", rm.getBranches().get(0).getName());
 
-		Path repo = this.config.getRepositoryRootDir().resolve(path);
+		Path repo = config.getRepositoryRootDir().resolve(path);
 		assertTrue(Files.exists(repo));
 
 		GitUtil.handleClone(repo.toUri(), dest, new Function<Git, _>() {
@@ -166,19 +147,6 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		// JGitのHttpServer起動
 		// clone
 		// 結果をassert
-	}
-
-	File cloneTestRepo() throws Exception {
-		Path path = this.config.getRepositoryRootDir().resolve("proj/repo");
-		final File testRepo = path.toFile();
-		return GitUtil.handleClone(new File("test/repo").toPath().toUri(),
-				testRepo, true, new Function<Git, File>() {
-					@Override
-					public File apply(Git git) {
-						assertTrue(testRepo.exists());
-						return testRepo;
-					}
-				});
 	}
 
 	@Test

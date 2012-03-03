@@ -11,8 +11,7 @@ import org.koshinuke.conf.Configuration;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import com.sun.jersey.spi.container.ContainerResponseFilter;
+import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.spi.container.TestContainer;
@@ -51,10 +50,11 @@ public class JettyTestContainerFactory implements TestContainerFactory {
 				holder.setInitParameter(
 						ServletContainer.APPLICATION_CONFIG_CLASS, ad
 								.getApplicationClass().getName());
-				holder.setInitParameter(ContainerRequestFilter.class.getName(),
+				holder.setInitParameter(
+						ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS,
 						GZIPContentEncodingFilter.class.getName());
 				holder.setInitParameter(
-						ContainerResponseFilter.class.getName(),
+						ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
 						GZIPContentEncodingFilter.class.getName());
 				ServletContextHandler sch = new ServletContextHandler();
 				sch.setAttribute(Configuration.NAME, new File(

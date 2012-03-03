@@ -42,6 +42,7 @@ import org.koshinuke.util.GitUtil;
 
 import com.google.common.base.Function;
 import com.sun.jersey.api.core.HttpContext;
+import com.sun.jersey.api.core.HttpResponseContext;
 import com.sun.jersey.spi.resource.Singleton;
 
 /**
@@ -93,7 +94,6 @@ public class GitHttpdService {
 	@Path(UPLOAD_PACK)
 	@Consumes(CT_UPD + "-request")
 	public Response uploadPack(final @Context HttpContext context,
-			final @Context HttpServletResponse response,
 			@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
@@ -104,9 +104,11 @@ public class GitHttpdService {
 							UploadPack pack = GitHttpdService.this
 									.makeUploadPack(input);
 							try {
-								GitHttpdService.this.noCache(response);
-								response.addHeader(HttpHeaders.CONTENT_TYPE,
-										CT_UPD + "-result");
+								HttpResponseContext response = context
+										.getResponse();
+								response.setResponse(noCache(null).type(
+										CT_UPD + "-result").build());
+
 								OutputStream out = response.getOutputStream();
 								InputStream in = context.getRequest()
 										.getEntity(InputStream.class);
@@ -122,19 +124,11 @@ public class GitHttpdService {
 				});
 	}
 
-	protected void noCache(HttpServletResponse response) {
-		response.addHeader("Expires", "Fri, 01 Jan 1980 00:00:00 GMT");
-		response.addHeader("Pragma", "no-cache");
-		response.addHeader("Cache-Control",
-				"no-cache, max-age=0, must-revalidate");
-	}
-
 	@POST
 	@Path(RECEIVE_PACK)
 	@Consumes(CT_RCV + "-request")
 	public Response receivePack(final @Context HttpContext context,
 			final @Context HttpServletRequest request,
-			final @Context HttpServletResponse response,
 			@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
@@ -146,13 +140,15 @@ public class GitHttpdService {
 									.makeReceivePack(request, input);
 							try {
 								pack.setBiDirectionalPipe(false);
-								GitHttpdService.this.noCache(response);
-								response.addHeader(HttpHeaders.CONTENT_TYPE,
-										CT_RCV + "-result");
+								HttpResponseContext response = context
+										.getResponse();
+								response.setResponse(noCache(null).type(
+										CT_RCV + "-result").build());
+
 								OutputStream out = response.getOutputStream();
-								pack.receive(
-										context.getRequest().getEntity(
-												InputStream.class), out, null);
+								InputStream in = context.getRequest()
+										.getEntity(InputStream.class);
+								pack.receive(in, out, null);
 								out.flush();
 							} catch (IOException e) {
 								throw new WebApplicationException(e);
@@ -371,15 +367,15 @@ public class GitHttpdService {
 		return repository.getConfig().getBoolean("http", "receivepack", false);
 	}
 
-	protected UploadPack makeUploadPack(Repository input) {
-		UploadPack pack = new UploadPack(input);
+	protected UploadPack makeUploadPack(Repository repository) {
+		UploadPack pack = new UploadPack(repository);
 		pack.setBiDirectionalPipe(false);
 		return pack;
 	}
 
 	protected ReceivePack makeReceivePack(HttpServletRequest req,
-			Repository input) {
-		ReceivePack rp = new ReceivePack(input);
+			Repository repository) {
+		ReceivePack rp = new ReceivePack(repository);
 		// TODO 送信ユーザのきちんとした情報を設定する。
 		Principal p = req.getUserPrincipal();
 		rp.setRefLogIdent(new PersonIdent(p.getName(), p.getName() + "@"

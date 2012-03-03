@@ -55,13 +55,31 @@ public class AuthenticationFilterFactory implements ResourceFilterFactory {
 		if (session != null) {
 			return (KoshinukePrincipal) session.getAttribute(AUTH);
 		}
-		return null;
+		return (KoshinukePrincipal) request.getAttribute(AUTH);
 	}
 
-	public static void setUserPrincipal(HttpServletRequest req) {
-		HttpSession session = req.getSession(true);
-		Principal principal = req.getUserPrincipal();
-		session.setAttribute(AUTH, new DefaultKoshinukePrincipal(principal));
+	/**
+	 * set principal to http session.
+	 * 
+	 * @param request
+	 */
+	public static void setUserPrincipal(HttpSession session,
+			HttpServletRequest request) {
+		session.setAttribute(AUTH, of(request));
+	}
+
+	protected static KoshinukePrincipal of(HttpServletRequest request) {
+		Principal principal = request.getUserPrincipal();
+		return new DefaultKoshinukePrincipal(principal);
+	}
+
+	/**
+	 * set principal to http request.
+	 * 
+	 * @param request
+	 */
+	public static void setUserPrincipal(HttpServletRequest request) {
+		request.setAttribute(AUTH, of(request));
 	}
 
 	@Override

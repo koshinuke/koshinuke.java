@@ -51,6 +51,8 @@ public class BasicAuthFilterFactory implements ResourceFilterFactory {
 								HttpServletRequest req = BasicAuthFilterFactory.this.requestInvoker
 										.get();
 								req.login(u, p);
+								AuthenticationFilterFactory
+										.setUserPrincipal(req);
 								return request;
 							}
 						}

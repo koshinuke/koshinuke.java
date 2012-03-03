@@ -4,11 +4,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import javax.ws.rs.core.Application;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.BeforeClass;
 import org.koshinuke.App;
@@ -58,6 +60,13 @@ public abstract class KoshinukeTest extends JerseyTest {
 					@Override
 					public File apply(Git git) {
 						assertTrue(testRepo.exists());
+						StoredConfig conf = git.getRepository().getConfig();
+						conf.setBoolean("http", null, "receivepack", true);
+						try {
+							conf.save();
+						} catch (IOException e) {
+							throw new AssertionError(e);
+						}
 						return testRepo;
 					}
 				});

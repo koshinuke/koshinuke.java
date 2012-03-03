@@ -4,14 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.Principal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -38,6 +35,7 @@ import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.UploadPack;
 import org.koshinuke.conf.Configuration;
 import org.koshinuke.jersey.auth.BasicAuth;
+import org.koshinuke.model.KoshinukePrincipal;
 import org.koshinuke.util.GitUtil;
 
 import com.google.common.base.Function;
@@ -69,16 +67,16 @@ public class GitHttpdService {
 	{
 		this.actions.put(UPLOAD_PACK, new InfoRefsAction() {
 			@Override
-			public Response execute(HttpServletRequest req, String project,
-					String repository) {
+			public Response execute(KoshinukePrincipal principal,
+					String project, String repository) {
 				return GitHttpdService.this.uploadPackInfo(project, repository);
 			}
 		});
 		this.actions.put(RECEIVE_PACK, new InfoRefsAction() {
 			@Override
-			public Response execute(HttpServletRequest req, String project,
-					String repository) {
-				return GitHttpdService.this.receivePackInfo(req, project,
+			public Response execute(KoshinukePrincipal principal,
+					String project, String repository) {
+				return GitHttpdService.this.receivePackInfo(principal, project,
 						repository);
 			}
 		});
@@ -128,7 +126,7 @@ public class GitHttpdService {
 	@Path(RECEIVE_PACK)
 	@Consumes(CT_RCV + "-request")
 	public Response receivePack(final @Context HttpContext context,
-			final @Context HttpServletRequest request,
+			final @Context KoshinukePrincipal principal,
 			@PathParam("project") String project,
 			@PathParam("repository") String repository) {
 		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
@@ -137,7 +135,7 @@ public class GitHttpdService {
 					public Response apply(Repository input) {
 						if (GitHttpdService.this.isEnabledReceivePack(input)) {
 							ReceivePack pack = GitHttpdService.this
-									.makeReceivePack(request, input);
+									.makeReceivePack(principal, input);
 							try {
 								pack.setBiDirectionalPipe(false);
 								HttpResponseContext response = context
@@ -162,14 +160,13 @@ public class GitHttpdService {
 
 	@GET
 	@Path(Constants.INFO_REFS)
-	public Response infoRefs(@Context HttpServletRequest request,
+	public Response infoRefs(@Context KoshinukePrincipal principal,
 			@PathParam("project") String project,
 			@PathParam("repository") String repository,
-			@QueryParam("service") String service,
-			@Context HttpServletResponse response) throws IOException {
+			@QueryParam("service") String service) throws IOException {
 		InfoRefsAction action = this.actions.get(service);
 		if (action != null) {
-			return action.execute(request, project, repository);
+			return action.execute(principal, project, repository);
 		}
 		return this.buildResponse(project, repository,
 				new Function<Repository, Response>() {
@@ -183,13 +180,9 @@ public class GitHttpdService {
 
 	public static final MediaType UPLOAD_PACK_INFO = new MediaType(
 			"application", SUB_TYPE_UPD + "-advertisement");
-	public static final String CT_UPLOADPACK = "application/" + SUB_TYPE_UPD
-			+ "-advertisement";
 
 	public static final MediaType RECEIVE_PACK_INFO = new MediaType(
 			"application", SUB_TYPE_RCV + "-advertisement");
-	public static final String CT_RECEIVE_PACK = "application/" + SUB_TYPE_RCV
-			+ "-advertisement";
 
 	protected Response uploadPackInfo(String project, String repository) {
 		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
@@ -206,7 +199,7 @@ public class GitHttpdService {
 				});
 	}
 
-	protected Response receivePackInfo(final HttpServletRequest req,
+	protected Response receivePackInfo(final KoshinukePrincipal p,
 			String project, String repository) {
 		return GitUtil.handleLocal(this.config.getRepositoryRootDir(), project,
 				repository, new Function<Repository, Response>() {
@@ -214,8 +207,8 @@ public class GitHttpdService {
 					public Response apply(Repository input) {
 						if (GitHttpdService.this.isEnabledReceivePack(input)) {
 							ReceivePack rp = GitHttpdService.this
-									.makeReceivePack(req, input);
-							return noCache(rp).type(UPLOAD_PACK_INFO).build();
+									.makeReceivePack(p, input);
+							return noCache(rp).type(RECEIVE_PACK_INFO).build();
 						}
 						return Response.status(Status.FORBIDDEN).build();
 					}
@@ -373,13 +366,10 @@ public class GitHttpdService {
 		return pack;
 	}
 
-	protected ReceivePack makeReceivePack(HttpServletRequest req,
+	protected ReceivePack makeReceivePack(KoshinukePrincipal p,
 			Repository repository) {
 		ReceivePack rp = new ReceivePack(repository);
-		// TODO 送信ユーザのきちんとした情報を設定する。
-		Principal p = req.getUserPrincipal();
-		rp.setRefLogIdent(new PersonIdent(p.getName(), p.getName() + "@"
-				+ req.getRemoteHost()));
+		rp.setRefLogIdent(new PersonIdent(p.getName(), p.getMail()));
 		return rp;
 	}
 }

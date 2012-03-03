@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.koshinuke.App;
 import org.koshinuke.jersey.TestConfigurationtProvider;
+import org.koshinuke.jersey.TestPrincipalProvider;
 import org.koshinuke.test.KoshinukeTest;
 import org.koshinuke.util.GitUtil;
 
@@ -33,6 +34,7 @@ public class GitHttpdServiceTest extends KoshinukeTest {
 			Set<Class<?>> s = new HashSet<>();
 			s.add(GitHttpdService.class);
 			s.add(TestConfigurationtProvider.class);
+			s.add(TestPrincipalProvider.class);
 			return s;
 		}
 
@@ -74,6 +76,13 @@ public class GitHttpdServiceTest extends KoshinukeTest {
 					new File("test/repo/README"), Charsets.UTF_8);
 			List<String> expLines = Files.readLines(newFile, Charsets.UTF_8);
 			assertEquals(actLines, expLines);
+
+			Files.write("aaaaa", new File(local, "test"), Charsets.UTF_8);
+			g.commit().setMessage("ぐわわ…")
+					.setAuthor("httpd-tester", "httpdtest@koshinuke.org")
+					.call();
+			g.tag().setName("hogehoge").setMessage("fugafuga").call();
+			g.push().call();
 		} finally {
 			GitUtil.close(g);
 		}

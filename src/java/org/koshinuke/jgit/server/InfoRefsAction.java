@@ -1,13 +1,14 @@
 package org.koshinuke.jgit.server;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
+
+import org.koshinuke.model.KoshinukePrincipal;
 
 /**
  * @author taichi
  */
 public interface InfoRefsAction {
 
-	Response execute(HttpServletRequest request, String project,
+	Response execute(KoshinukePrincipal principal, String project,
 			String repository);
 }

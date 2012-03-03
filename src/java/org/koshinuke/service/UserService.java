@@ -52,7 +52,8 @@ public class UserService {
 				if (session != null) {
 					session.invalidate();
 				}
-				AuthenticationFilterFactory.setUserPrincipal(req);
+				AuthenticationFilterFactory.setUserPrincipal(
+						req.getSession(true), req);
 				// HttpServletResponse#sendRedirectを使い、リダイレクト先としてコンテキストルートを指定すると、
 				// このリクエストを送信する際にはまだHttpSessionが存在しない為に、
 				// URLのセッションIDと/が隣合う不適切なLocationヘッダが生成されてしまうので、回避措置。

@@ -14,6 +14,8 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.WindowCache;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 
 import com.google.common.base.Function;
 
@@ -78,8 +80,16 @@ public class GitUtil {
 	}
 
 	public static void close(Repository repo) {
-		if (repo != null) {
-			repo.close();
+		try {
+			if (repo != null) {
+				repo.close();
+			}
+		} finally {
+			// PackFileのキャッシュを消す。
+			// 当該リポジトリとは関係の無いキャッシュも削除される為、
+			// パフォーマンスが大きく劣化する可能性があるが、
+			// メモリリークでFDを消費しきるよりは遥かにマシなのでキャッシュを消す。
+			WindowCache.reconfigure(new WindowCacheConfig());
 		}
 	}
 

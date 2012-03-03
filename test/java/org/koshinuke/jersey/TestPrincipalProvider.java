@@ -35,7 +35,7 @@ public class TestPrincipalProvider implements InjectableProvider<Context, Type> 
 		return new Injectable<KoshinukePrincipal>() {
 			@Override
 			public KoshinukePrincipal getValue() {
-				return new DefaultKoshinukePrincipal("test",
+				return new DefaultKoshinukePrincipal("testname",
 						"test@koshinuke.org");
 			}
 		};

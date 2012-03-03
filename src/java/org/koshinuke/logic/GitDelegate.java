@@ -21,6 +21,7 @@ import net.iharder.Base64;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -201,21 +202,23 @@ public class GitDelegate {
 			// ローカルディレクトリの読み取りは許可しない。
 			// TODO support ssh+git
 			if (StringUtils.isEmptyOrNull(u.getHost()) == false) {
-				final File local = pickWorkingDir(this.config.getWorkingDir());
+				Path userPath = GitDelegate.this.config.getRepositoryRootDir()
+						.resolve(p.getName());
+				String humanish = u.getHumanishName();
+				// TODO 特定のプロジェクトに紐付けるのが正しいのでは無いか？
+				Path newone = userPath.resolve(humanish);
+				File local = java.nio.file.Files.exists(newone) ? pickWorkingDir(userPath)
+						: newone.toFile();
+				Git g = null;
 				try {
-					final String humanish = u.getHumanishName();
-					GitUtil.handleClone(u.toString(),
-							new File(local, humanish), true,
-							new Function<Git, _>() {
-								@Override
-								public _ apply(Git input) {
-									GitDelegate.this.copyCloningRepository(p,
-											input, humanish);
-									return _._;
-								}
-							});
-				} finally {
+					g = Git.cloneRepository().setURI(uri).setBare(true)
+							.setDirectory(local).call();
+				} catch (JGitInternalException e) {
+					this.LOG.log(Level.WARNING, e.getMessage(), e);
 					this.delete(local);
+					throw e;
+				} finally {
+					GitUtil.close(g);
 				}
 				return true;
 			}
@@ -223,25 +226,6 @@ public class GitDelegate {
 			this.LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return false;
-	}
-
-	protected void copyCloningRepository(final KoshinukePrincipal p, Git input,
-			String humanish) {
-		Repository repo = input.getRepository();
-		File dir = repo.getDirectory();
-		// TODO 特定のプロジェクトに紐付けるのが正しいのでは無いか？
-		Path userPath = GitDelegate.this.config.getRepositoryRootDir().resolve(
-				p.getName());
-		Path newone = userPath.resolve(humanish);
-		if (java.nio.file.Files.exists(newone)) {
-			File f = pickWorkingDir(userPath);
-			newone = f.toPath();
-		}
-		try {
-			java.nio.file.Files.copy(dir.toPath(), newone);
-		} catch (IOException e) {
-			throw new IORuntimeException(e);
-		}
 	}
 
 	public List<NodeModel> listRepository(String project, String repository,

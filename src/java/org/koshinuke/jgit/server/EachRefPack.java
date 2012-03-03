@@ -7,6 +7,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefAdvertiser;
+import org.koshinuke.util.GitUtil;
 
 /**
  * @author taichi
@@ -26,6 +27,6 @@ public class EachRefPack {
 	}
 
 	public void dispose() {
-		this.repository.close();
+		GitUtil.close(this.repository);
 	}
 }

@@ -6,6 +6,7 @@ import javax.ws.rs.ext.Provider;
 
 import org.eclipse.jgit.transport.RefAdvertiser;
 import org.eclipse.jgit.transport.UploadPack;
+import org.koshinuke.util.GitUtil;
 
 /**
  * @author taichi
@@ -21,9 +22,13 @@ public class UploadPackWriter extends AbstractPackInfoWriter<UploadPack> {
 	protected void advertise(UploadPack pack, RefAdvertiser advertiser)
 			throws IOException {
 		try {
-			pack.sendAdvertisedRefs(advertiser);
+			try {
+				pack.sendAdvertisedRefs(advertiser);
+			} finally {
+				pack.getRevWalk().release();
+			}
 		} finally {
-			pack.getRevWalk().release();
+			GitUtil.close(pack.getRepository());
 		}
 	}
 }

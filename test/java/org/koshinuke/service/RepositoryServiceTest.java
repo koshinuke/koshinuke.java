@@ -32,6 +32,10 @@ import org.koshinuke.App;
 import org.koshinuke._;
 import org.koshinuke.jersey.TestConfigurationtProvider;
 import org.koshinuke.jersey.TestPrincipalProvider;
+import org.koshinuke.jgit.server.EachRefPackWriter;
+import org.koshinuke.jgit.server.GitHttpdService;
+import org.koshinuke.jgit.server.ReceivePackWriter;
+import org.koshinuke.jgit.server.UploadPackWriter;
 import org.koshinuke.model.BlameModel;
 import org.koshinuke.model.BlobModel;
 import org.koshinuke.model.BranchHistoryModel;
@@ -62,6 +66,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		public Set<Class<?>> getClasses() {
 			Set<Class<?>> s = new HashSet<>();
 			s.add(RepositoryService.class);
+			s.add(GitHttpdService.class);
 			s.add(TestConfigurationtProvider.class);
 			s.add(TestPrincipalProvider.class);
 			return s;
@@ -71,6 +76,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 		public Set<Object> getSingletons() {
 			HashSet<Object> singletons = new HashSet<Object>();
 			singletons.add(App.makeJsonProvider());
+			singletons.add(new EachRefPackWriter());
+			singletons.add(new UploadPackWriter());
+			singletons.add(new ReceivePackWriter());
 			return singletons;
 		}
 	}
@@ -143,10 +151,21 @@ public class RepositoryServiceTest extends KoshinukeTest {
 
 	@Test
 	public void testClone() throws Exception {
-		// TODO
-		// JGitのHttpServer起動
-		// clone
-		// 結果をassert
+		this.cloneTestRepo();
+
+		Form form = new Form();
+		form.add("!", "clone");
+		form.add("uri", this.getBaseURI().resolve("/proj/repo.git").toString());
+		form.add("un", "username");
+		form.add("up", "password");
+
+		List<RepositoryModel> list = this.resource().path("/api/1.0")
+				.accept(MediaType.APPLICATION_JSON_TYPE)
+				.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
+				.post(new GenericType<List<RepositoryModel>>() {
+				}, form);
+		assertNotNull(list);
+		assertEquals(2, list.size());
 	}
 
 	@Test

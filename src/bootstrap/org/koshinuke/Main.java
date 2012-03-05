@@ -55,10 +55,28 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Server server = start();
+		final Server server = start();
 
-		System.in.read();
-		server.stop();
+		Runtime.getRuntime().addShutdownHook(
+				new Thread(new ShutdownHook(server)));
+		server.join();
+	}
+
+	static class ShutdownHook implements Runnable {
+		final Server server;
+
+		public ShutdownHook(Server server) {
+			this.server = server;
+		}
+
+		@Override
+		public void run() {
+			try {
+				this.server.stop();
+			} catch (Exception e) {
+				System.err.println(e.getMessage());
+			}
+		}
 	}
 
 }

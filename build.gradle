@@ -30,7 +30,7 @@ dependencies {
 
 	compile 'com.google.guava:guava:11.+'
 	compile 'org.codehaus.jackson:jackson-jaxrs:1.9.+'
-	compile 'com.github.spullara.mustache.java:builder:0.6+'
+	compile 'com.github.spullara.mustache.java:builder:0.6.2'
 
 	providedCompile 'org.mortbay.jetty:servlet-api:3.0.20100224'
 

@@ -11,8 +11,6 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
-dependsOnChildren()
-
 configurations.all { resolutionStrategy.cacheChangingModulesFor 14, 'days' }
 
 repositories {
@@ -41,7 +39,7 @@ dependencies {
 		'jetty-servlet',
 		'jetty-plus'
 	].each {
-		compile ("org.eclipse.jetty:$it:8.+") { exclude group: 'org.eclipse.jetty.orbit' }
+		providedCompile ("org.eclipse.jetty:$it:8.+") { exclude group: 'org.eclipse.jetty.orbit' }
 	}
 
 	testCompile 'junit:junit:4.+'
@@ -90,8 +88,8 @@ buildscript {
 		flatDir { dirs 'lib' }
 	}
 	dependencies {
-		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.2.+'
-		classpath 'org.eclipse.jetty:jetty-http:8.0.+'
+		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.+'
+		classpath ('org.eclipse.jetty:jetty-http:8.+') { exclude group: 'org.eclipse.jetty.orbit' }
 		classpath 'com.google.guava:guava:11.+'
 	}
 }
@@ -120,16 +118,37 @@ task cloneWeb(dependsOn: clean) << {
 	}
 }
 
-task makewar(dependsOn: classes) {
-	description = "make executable war."
-	doLast {
-		// UIプロジェクトのbuildを実行
-		def uiproject = project("../koshinuke")
-		println uiproject.defaultTasks.collect { uiproject[it] } + project.classes
-		// 必要なリソースをビルドディレクトリにコピー
-		project.war {
-			webAppDirName = "src/webapp"
+war {
+	// TODO convert debug html to release html.
+	description "make web application archive."
+	def ui = evaluationDependsOn('../koshinuke')
+	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes
+	def webapp = 'src/webapp'
+	webXml file("$webapp/WEB-INF/web.xml")
+	with {
+		into('WEB-INF/mustache/') {
+			from "$webapp/WEB-INF/mustache/"
 		}
+		into('static') {
+			exclude '**/build/**', '**/closure-library/**'
+			from "$koshinuke_path/static/"
+		}
+	}
+}
+compileBootstrapJava.classpath = compileJava.classpath
+
+jar {
+	description "make executable archive."
+	dependsOn compileBootstrapJava, war
+	from { configurations.providedCompile.collect { it.isDirectory() ? it : zipTree(it) } }
+	from(compileBootstrapJava.destinationDir) {
+		exclude '**/Debug.class'
+	}
+	into('') {
+		from war.archivePath
+	}
+	manifest {
+		attributes 'Main-Class': 'org.koshinuke.Main'
 	}
 }
 

@@ -13,12 +13,16 @@ public class Main extends Launcher {
 
 	@Override
 	protected void initialize(WebAppContext webAppContext) {
-		ProtectionDomain protectionDomain = Main.class.getProtectionDomain();
-		URL location = protectionDomain.getCodeSource().getLocation();
-		webAppContext.setWar(location.toExternalForm());
+		ProtectionDomain domain = Main.class.getProtectionDomain();
+		ClassLoader loader = domain.getClassLoader();
+		URL war = loader.getResource("koshinuke.java.war");
+		System.out.println(war);
+		webAppContext.setWar(war.toExternalForm());
 	}
 
 	public static void main(String[] args) throws Exception {
+		// TODO modify bootstrap classpath
+		// TODO add default etc files if it doesn't exists
 		Main me = new Main();
 		Server server = me.start();
 		server.join();

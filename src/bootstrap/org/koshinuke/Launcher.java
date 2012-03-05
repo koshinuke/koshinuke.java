@@ -9,8 +9,6 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.koshinuke.conf.Configuration;
-import org.koshinuke.util.RandomUtil;
 
 /**
  * @author taichi
@@ -25,7 +23,7 @@ public abstract class Launcher {
 		WebAppContext sch = new WebAppContext();
 		sch.setContextPath("/");
 		this.sessionCookieSecured(sch);
-		sch.setAttribute(Configuration.NAME, new File(
+		sch.setAttribute("org.koshinuke.conf.Configuration", new File(
 				"etc/koshinuke.properties").toURI().toURL());
 		server.setHandler(sch);
 		SecurityHandler secure = this.securitySettings(sch);
@@ -41,7 +39,7 @@ public abstract class Launcher {
 	}
 
 	protected void sessionCookieSecured(ServletContextHandler sch) {
-		String s = RandomUtil.nextString(6);
+		String s = "sid";
 		sch.setInitParameter(SessionManager.__SessionCookieProperty, s);
 		sch.setInitParameter(
 				SessionManager.__SessionIdPathParameterNameProperty, s);

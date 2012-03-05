@@ -6,6 +6,7 @@ import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jetty.util.security.Credential;
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
@@ -89,7 +90,7 @@ buildscript {
 	}
 	dependencies {
 		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.+'
-		classpath ('org.eclipse.jetty:jetty-http:8.+') { exclude group: 'org.eclipse.jetty.orbit' }
+		classpath ('org.eclipse.jetty:jetty-util:8.+') { exclude group: 'org.eclipse.jetty.orbit' }
 		classpath 'com.google.guava:guava:11.+'
 	}
 }
@@ -210,7 +211,7 @@ task testrepo {
 task passwd {
 	description = "login.properties Utility."
 	doLast {
-		println "taichi: " + org.eclipse.jetty.http.security.Credential.MD5.digest("taichipass")
-		println "lanius: " + org.eclipse.jetty.http.security.Credential.Crypt.crypt("lanius", "laniuspass")
+		println "taichi: " + Credential.MD5.digest("taichipass")
+		println "lanius: " + Credential.Crypt.crypt("lanius", "laniuspass")
 	}
 }

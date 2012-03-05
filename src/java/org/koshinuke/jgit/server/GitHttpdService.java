@@ -114,6 +114,11 @@ public class GitHttpdService {
 								out.flush();
 							} catch (IOException e) {
 								throw new WebApplicationException(e);
+							} finally {
+								// PackFileのキャッシュを消す。
+								// UploadPackのどこかにメモリリークがある様だ。
+								// 関係ないキャッシュも消えるが、 メモリリークでFDを消費しきるよりは遥かにマシ。
+								GitUtil.clearCache();
 							}
 							return null;
 						}

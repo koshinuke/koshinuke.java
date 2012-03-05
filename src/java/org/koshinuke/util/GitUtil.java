@@ -80,17 +80,13 @@ public class GitUtil {
 	}
 
 	public static void close(Repository repo) {
-		try {
-			if (repo != null) {
-				repo.close();
-			}
-		} finally {
-			// PackFileのキャッシュを消す。
-			// 当該リポジトリとは関係の無いキャッシュも削除される為、
-			// パフォーマンスが大きく劣化する可能性があるが、
-			// メモリリークでFDを消費しきるよりは遥かにマシなのでキャッシュを消す。
-			WindowCache.reconfigure(new WindowCacheConfig());
+		if (repo != null) {
+			repo.close();
 		}
+	}
+
+	public static void clearCache() {
+		WindowCache.reconfigure(new WindowCacheConfig());
 	}
 
 	public static void close(Git git) {

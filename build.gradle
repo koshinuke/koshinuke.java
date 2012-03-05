@@ -11,6 +11,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
+dependsOnChildren()
+
 configurations.all { resolutionStrategy.cacheChangingModulesFor 14, 'days' }
 
 repositories {
@@ -61,7 +63,6 @@ sourceSets {
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
-webAppDirName = "src/webapp"
 
 tasks.withType(AbstractCompile).each {
 	it.options.encoding = "UTF-8"
@@ -116,6 +117,19 @@ task cloneWeb(dependsOn: clean) << {
 		into 'src/webapp/'
 		from(dir) { include "static/**" }
 		exclude "**/.git*"
+	}
+}
+
+task makewar(dependsOn: classes) {
+	description = "make executable war."
+	doLast {
+		// UIプロジェクトのbuildを実行
+		def uiproject = project("../koshinuke")
+		println uiproject.defaultTasks.collect { uiproject[it] } + project.classes
+		// 必要なリソースをビルドディレクトリにコピー
+		project.war {
+			webAppDirName = "src/webapp"
+		}
 	}
 }
 

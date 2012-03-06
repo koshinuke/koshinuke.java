@@ -118,38 +118,35 @@ task cloneWeb(dependsOn: clean) << {
 		exclude "**/.git*"
 	}
 }
+compileBootstrapJava.classpath = compileJava.classpath
 
 war {
-	// TODO convert debug html to release html.
 	description "make web application archive."
 	def ui = evaluationDependsOn('../koshinuke')
-	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes
+	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes << compileBootstrapJava
+	baseName 'koshinuke'
+	extension 'jar'
 	def webapp = 'src/webapp'
 	webXml file("$webapp/WEB-INF/web.xml")
 	with {
+		from { configurations.providedCompile.collect { it.isDirectory() ? it : zipTree(it) } }
+		from(compileBootstrapJava.destinationDir) {
+			exclude '**/Debug.class'
+		}
+		manifest {
+			attributes 'Main-Class': 'org.koshinuke.Main'
+		}
 		into('WEB-INF/mustache/') {
-			from "$webapp/WEB-INF/mustache/"
+			from "${ui.buildDir}/html/"
+		}
+		into('WEB-INF/etc') {
+			exclude '*.xml'
+			from file('etc')
 		}
 		into('static') {
 			exclude '**/build/**', '**/closure-library/**'
 			from "$koshinuke_path/static/"
 		}
-	}
-}
-compileBootstrapJava.classpath = compileJava.classpath
-
-jar {
-	description "make executable archive."
-	dependsOn compileBootstrapJava, war
-	from { configurations.providedCompile.collect { it.isDirectory() ? it : zipTree(it) } }
-	from(compileBootstrapJava.destinationDir) {
-		exclude '**/Debug.class'
-	}
-	into('') {
-		from war.archivePath
-	}
-	manifest {
-		attributes 'Main-Class': 'org.koshinuke.Main'
 	}
 }
 

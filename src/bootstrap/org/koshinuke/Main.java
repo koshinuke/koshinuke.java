@@ -1,9 +1,13 @@
 package org.koshinuke;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.security.ProtectionDomain;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -14,16 +18,33 @@ public class Main extends Launcher {
 	@Override
 	protected void initialize(WebAppContext webAppContext) {
 		ProtectionDomain domain = Main.class.getProtectionDomain();
-		ClassLoader loader = domain.getClassLoader();
-		URL war = loader.getResource("koshinuke.java.war");
-		System.out.println(war);
-		webAppContext.setWar(war.toExternalForm());
+		URL location = domain.getCodeSource().getLocation();
+		webAppContext.setWar(location.toExternalForm());
+	}
+
+	protected void prepare() {
+		File etc = new File("etc");
+		if (etc.exists() == false) {
+			etc.mkdir();
+			ClassLoader cl = Main.class.getClassLoader();
+			String[] ary = { "jaas.conf", "koshinuke.properties",
+					"login.properties" };
+			for (String s : ary) {
+				URL url = cl.getResource("WEB-INF/etc/" + s);
+				try (InputStream in = url.openStream();
+						FileOutputStream out = new FileOutputStream(new File(
+								etc, s))) {
+					IO.copy(in, out);
+				} catch (Exception e) {
+					throw new Error(e);
+				}
+			}
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
-		// TODO modify bootstrap classpath
-		// TODO add default etc files if it doesn't exists
 		Main me = new Main();
+		me.prepare();
 		Server server = me.start();
 		server.join();
 	}

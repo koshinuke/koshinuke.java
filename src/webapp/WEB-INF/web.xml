@@ -39,4 +39,12 @@
 		<filter-name>Jeresy</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+	<login-config>
+		<auth-method>FORM</auth-method>
+		<realm-name>Koshinuke</realm-name>
+		<form-login-config>
+			<form-login-page>/login</form-login-page>
+			<form-error-page>/login</form-error-page>
+		</form-login-config>
+	</login-config>
 </web-app>

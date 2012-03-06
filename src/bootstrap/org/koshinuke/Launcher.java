@@ -3,7 +3,6 @@ package org.koshinuke;
 import java.io.File;
 
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
@@ -20,13 +19,13 @@ public abstract class Launcher {
 	protected Server start() throws Exception {
 		Server server = new Server(80);
 		server.setSendServerVersion(false);
+		this.securitySettings(server);
 		WebAppContext sch = new WebAppContext();
 		sch.setContextPath("/");
 		this.sessionCookieSecured(sch);
 		sch.setAttribute("org.koshinuke.conf.Configuration", new File(
 				"etc/koshinuke.properties").toURI().toURL());
 		server.setHandler(sch);
-		SecurityHandler secure = this.securitySettings(sch);
 
 		this.initialize(sch);
 
@@ -34,7 +33,6 @@ public abstract class Launcher {
 				new Thread(new ShutdownHook(server)));
 
 		server.start();
-		secure.start();
 		return server;
 	}
 
@@ -48,16 +46,13 @@ public abstract class Launcher {
 		asm.setHttpOnly(true);
 	}
 
-	protected SecurityHandler securitySettings(ServletContextHandler sch)
-			throws Exception {
-		System.setProperty("java.security.auth.login.config", "etc/jaas.conf");
-		SecurityHandler secure = sch.getSecurityHandler();
-		secure.setAuthMethod("FORM");
-		secure.setRealmName("Login");
-		JAASLoginService ls = new JAASLoginService(secure.getRealmName());
-		ls.start();
-		secure.setLoginService(ls);
-		return secure;
+	protected void securitySettings(Server server) throws Exception {
+		String key = "java.security.auth.login.config";
+		String s = System.getProperty(key);
+		if (s == null || s.isEmpty()) {
+			System.setProperty(key, "etc/jaas.conf");
+		}
+		server.addBean(new JAASLoginService("Koshinuke"));
 	}
 
 	static class ShutdownHook implements Runnable {

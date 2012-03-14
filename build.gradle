@@ -9,6 +9,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jetty.util.security.Credential;
 
 apply plugin: 'java'
+apply plugin: 'groovy'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
@@ -43,6 +44,10 @@ dependencies {
 		providedCompile ("org.eclipse.jetty:$it:8.+") { exclude group: 'org.eclipse.jetty.orbit' }
 	}
 
+	def g = 'org.codehaus.groovy:groovy:1.8.6'
+	providedCompile g
+	groovy g
+
 	testCompile 'junit:junit:4.+'
 	testCompile 'com.sun.jersey:jersey-client:1.+'
 	testCompile ('com.sun.jersey.jersey-test-framework:jersey-test-framework-core:1.+') { exclude group: 'javax.servlet' }
@@ -53,7 +58,7 @@ sourceSets {
 		java.srcDir 'src/java'
 		resources.srcDir 'src/java'
 	}
-	bootstrap { java.srcDir "src/bootstrap" }
+	bootstrap { groovy.srcDir 'src/groovy' }
 	test {
 		java.srcDir 'test/java'
 		resources.srcDir 'test/java'
@@ -71,7 +76,8 @@ eclipse {
 	project { name = 'koshinuke.java' }
 	classpath {
 		containers = [
-			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
+			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7',
+			'GROOVY_SUPPORT'
 		]
 		defaultOutputDir = file('bin')
 		file {
@@ -118,27 +124,21 @@ task cloneWeb(dependsOn: clean) << {
 		exclude "**/.git*"
 	}
 }
-compileBootstrapJava.classpath = compileJava.classpath
+compileBootstrapGroovy.classpath = compileJava.classpath
 
 war {
 	description "make web application archive."
 	def ui = evaluationDependsOn('../koshinuke')
-	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes << compileBootstrapJava
+	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes << compileBootstrapGroovy
 	baseName 'koshinuke'
 	extension 'jar'
 	def webapp = 'src/webapp'
 	webXml file("$webapp/WEB-INF/web.xml")
 	with {
 		from { configurations.providedCompile.collect { it.isDirectory() ? it : zipTree(it) } }
-		from(compileBootstrapJava.destinationDir) {
-			exclude '**/Debug.class'
-		}
-		manifest {
-			attributes 'Main-Class': 'org.koshinuke.Main'
-		}
-		into('WEB-INF/mustache/') {
-			from "${ui.buildDir}/html/"
-		}
+		from(compileBootstrapJava.destinationDir) { exclude '**/Debug.class' }
+		manifest { attributes 'Main-Class': 'org.koshinuke.Main' }
+		into('WEB-INF/mustache/') { from "${ui.buildDir}/html/" }
 		into('WEB-INF/etc') {
 			exclude '*.xml'
 			from file('etc')

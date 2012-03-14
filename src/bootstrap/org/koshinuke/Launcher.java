@@ -18,6 +18,8 @@ public abstract class Launcher {
 
 	protected Server start() throws Exception {
 		Server server = new Server(80);
+		server.setStopAtShutdown(true);
+		server.setGracefulShutdown(1000);
 		server.setSendServerVersion(false);
 		this.securitySettings(server);
 		WebAppContext sch = new WebAppContext();
@@ -28,9 +30,6 @@ public abstract class Launcher {
 		server.setHandler(sch);
 
 		this.initialize(sch);
-
-		Runtime.getRuntime().addShutdownHook(
-				new Thread(new ShutdownHook(server)));
 
 		server.start();
 		return server;
@@ -54,22 +53,4 @@ public abstract class Launcher {
 		}
 		server.addBean(new JAASLoginService("Koshinuke"));
 	}
-
-	static class ShutdownHook implements Runnable {
-		final Server server;
-
-		public ShutdownHook(Server server) {
-			this.server = server;
-		}
-
-		@Override
-		public void run() {
-			try {
-				this.server.stop();
-			} catch (Exception e) {
-				System.err.println(e.getMessage());
-			}
-		}
-	}
-
 }

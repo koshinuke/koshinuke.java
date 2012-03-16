@@ -1,10 +1,6 @@
-/.settings
-/.classpath
-/.gradle
-/.project
-/gradle.properties
+/.*
 /build
 /lib
 /bin
 /repo
-/gradle-app.setting
+/gradle*

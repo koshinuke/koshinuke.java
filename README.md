@@ -13,6 +13,13 @@ Apache License, Version 2.0
 * download latest release from [here](https://github.com/koshinuke/koshinuke.java/downloads)
 * execute  
   `java -jar koshinuke.jar`
+* access to [localhost](http://localhost)
+* default username and password is taichi/taichipass
+* if you want to add user, gradle script contains password utility  
+    * modify passwd task  
+    * execute passwd task  
+       `gradle passwd`  
+    * copy output to etc/login.properties
 
 ## Setup for development
 * clone this repository  

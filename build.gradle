@@ -13,6 +13,11 @@ apply plugin: 'groovy'
 apply plugin: 'eclipse'
 apply plugin: 'war'
 
+group = 'org.koshinuke'
+archivesBaseName = 'koshinuke'
+version = new Date().format 'yyyyMMdd_HHmmss'
+description = 'KoshiNuke server implementation by java'
+
 configurations.all { resolutionStrategy.cacheChangingModulesFor 14, 'days' }
 
 repositories {
@@ -139,7 +144,6 @@ war {
 	description "make web application archive."
 	def ui = evaluationDependsOn('../koshinuke')
 	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes << compileBootstrapGroovy
-	baseName 'koshinuke'
 	extension 'jar'
 	def webapp = 'src/webapp'
 	webXml file("$webapp/WEB-INF/web.xml")
@@ -157,6 +161,10 @@ war {
 			from "$koshinuke_path/static/"
 		}
 	}
+}
+
+artifacts {
+	archives war
 }
 
 task sym << {

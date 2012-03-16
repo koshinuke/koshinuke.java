@@ -39,6 +39,12 @@ systemProp.http.proxyPort=8080
 koshinuke_path=~/repos/koshinuke
 closure_path=~/repos/closure-library
 ```
+```java
+RepositoryService service = new RepositoryService();
+for (Repository repo : service.getRepositories("defunkt"))
+  System.out.println(repo.getName() + " Watchers: " + repo.getWatchers());
+```
+
 * copy static contents from koshinuke  
   `gradle cloneweb sym`  
 * convert to eclipse project  

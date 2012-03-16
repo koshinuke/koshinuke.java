@@ -33,11 +33,11 @@ Apache License, Version 2.0
     * koshinuke\_path to local koshinuke repository root dir
     * closure\_path to local clorsure-library root dir  
     _example of gradle.properties_  
-```txt
-systemProp.http.proxyHost=proxy.example.org  
-systemProp.http.proxyPort=8080  
-koshinuke_path=~/repos/koshinuke  
-closure_path=~/repos/closure-library  
+```java
+systemProp.http.proxyHost=proxy.example.org
+systemProp.http.proxyPort=8080
+koshinuke_path=~/repos/koshinuke
+closure_path=~/repos/closure-library
 ```
 * copy static contents from koshinuke  
   `gradle cloneweb sym`  

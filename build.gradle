@@ -76,13 +76,22 @@ eclipse {
 	project { name = 'koshinuke.java' }
 	classpath {
 		containers = [
-			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7',
-			'GROOVY_SUPPORT'
+			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
 		]
 		defaultOutputDir = file('bin')
 		file {
 			whenMerged {
 				it.entries.find { it.path == 'src/java' }?.output = 'src/webapp/WEB-INF/classes'
+			}
+			withXml {
+				// for tailing classpath container
+				def n = it.asNode()
+				[
+					'GROOVY_SUPPORT',
+					'GROOVY_DSL_SUPPORT'
+				].each {
+					n.appendNode 'classpathentry', [kind: 'con', path: it]
+				}
 			}
 		}
 	}

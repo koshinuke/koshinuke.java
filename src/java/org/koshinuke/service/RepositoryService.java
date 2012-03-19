@@ -113,7 +113,7 @@ public class RepositoryService {
 		return Response.status(ServletUtil.SC_UNPROCESSABLE_ENTITY).build();
 	}
 
-	protected static Pattern isNumeric = Pattern.compile("[0-9]+");
+	protected static final Pattern isNumeric = Pattern.compile("[0-9]+");
 
 	protected static int to(String s, int dv) {
 		if (s != null && isNumeric.matcher(s).matches()) {

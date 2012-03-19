@@ -64,8 +64,8 @@ public class PropertiesConfiguration implements Configuration {
 			return DEF;
 		}
 		Path p = fs.getPath(path);
-		if (Files.exists(p) == false) {
-			p.toFile().mkdirs();
+		if (Files.exists(p) == false && p.toFile().mkdirs() == false) {
+			throw new IllegalStateException();
 		}
 		return p.toAbsolutePath();
 	}

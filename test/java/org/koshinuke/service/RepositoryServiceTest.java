@@ -24,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.Before;
@@ -349,7 +350,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 					String content = "ぎょぱぎょぱ";
 					String path = "ppp/zzz/gg.txt";
 					File newone = new File(working, path);
-					newone.getParentFile().mkdirs();
+					if (newone.getParentFile().mkdirs() == false) {
+						throw new IllegalStateException();
+					}
 					com.google.common.io.Files.write(content, newone,
 							java.nio.charset.Charset.forName("UTF-8"));
 					g.add().addFilepattern(path).call();
@@ -358,7 +361,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 							.call();
 					g.push().call();
 					return _._;
-				} catch (Exception e) {
+				} catch (GitAPIException | IOException e) {
 					throw new IllegalStateException(e);
 				}
 			}
@@ -399,7 +402,9 @@ public class RepositoryServiceTest extends KoshinukeTest {
 								String content = "ぎょぱぎょぱ";
 								String path = "ppp/zzz/gg.txt";
 								File newone = new File(working, path);
-								newone.getParentFile().mkdirs();
+								if (newone.getParentFile().mkdirs() == false) {
+									throw new IllegalStateException();
+								}
 								com.google.common.io.Files.write(content,
 										newone, java.nio.charset.Charset
 												.forName("UTF-8"));
@@ -423,7 +428,7 @@ public class RepositoryServiceTest extends KoshinukeTest {
 											"testdiff@koshinuke.org").call();
 							g.push().call();
 							return commit.getId().name();
-						} catch (Exception e) {
+						} catch (GitAPIException | IOException e) {
 							throw new IllegalStateException(e);
 						}
 					}

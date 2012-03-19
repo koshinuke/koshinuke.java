@@ -23,7 +23,7 @@ public class ServletUtil {
 	 * 
 	 * @see http://tools.ietf.org/html/rfc4918#section-11.2
 	 */
-	public static int SC_UNPROCESSABLE_ENTITY = 422;
+	public static final int SC_UNPROCESSABLE_ENTITY = 422;
 
 	public static void redirect(HttpServletResponse res, String path) {
 		try {

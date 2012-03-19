@@ -196,8 +196,7 @@ public class GitDelegate {
 			URIish u = new URIish(uri);
 			if (StringUtils.isEmptyOrNull(un) == false
 					&& StringUtils.isEmptyOrNull(up) == false) {
-				u.setUser(un);
-				u.setPass(up);
+				u = u.setUser(un).setPass(up);
 			}
 			// ローカルディレクトリの読み取りは許可しない。
 			// TODO support ssh+git

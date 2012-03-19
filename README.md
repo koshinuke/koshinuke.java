@@ -29,9 +29,9 @@ Apache License, Version 2.0
 * checkout closure-library  
   `svn co http://closure-library.googlecode.com/svn/trunk/ closure-library`  
 * if you haven't use gradle yet
-    * execute gradle installation shell script called gradle wrapper.
+    * execute gradle installation shell script called gradle wrapper.  
     `gradle` (Linux/Mac)  
-    `gradle.bat` (Windows)
+    `gradle.bat` (Windows)  
 * make gradle.properties
     * add proxy entry if you need.
     * koshinuke\_path to local koshinuke repository root dir

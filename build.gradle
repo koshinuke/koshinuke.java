@@ -277,6 +277,11 @@ task testrepo {
 	}
 }
 
+task wrapper(type: Wrapper) {
+	jarFile file('wrapper/gradle-wrapper.jar')
+	scriptFile file('gradle')
+}
+
 task passwd {
 	description = "login.properties Utility."
 	doLast {

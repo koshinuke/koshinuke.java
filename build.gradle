@@ -1,5 +1,4 @@
 // -Xms40m -Xmx4096m -Dfile.encoding=UTF-8
-import java.io.File;
 import java.nio.file.*;
 
 import org.eclipse.egit.github.core.*
@@ -7,10 +6,7 @@ import org.eclipse.egit.github.core.client.*
 import org.eclipse.egit.github.core.service.*
 
 import org.eclipse.jgit.api.*
-import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode
 import org.eclipse.jgit.lib.*
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
-import org.eclipse.jetty.util.security.Credential
 import org.eclipse.jgit.transport.*
 import org.eclipse.jgit.errors.*
 
@@ -75,38 +71,14 @@ sourceSets {
 		resources.srcDir 'test/java'
 	}
 }
+compileBootstrapGroovy.classpath = compileJava.classpath
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-tasks.withType(AbstractCompile).each {
-	it.options.encoding = "UTF-8"
-}
-
-eclipse {
-	project { name = 'koshinuke.java' }
-	classpath {
-		containers = [
-			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
-		]
-		defaultOutputDir = file('bin')
-		file {
-			whenMerged {
-				it.entries.find { it.path == 'src/java' }?.output = 'src/webapp/WEB-INF/classes'
-			}
-			withXml {
-				// for tailing classpath container
-				def n = it.asNode()
-				[
-					'GROOVY_SUPPORT',
-					'GROOVY_DSL_SUPPORT'
-				].each {
-					n.appendNode 'classpathentry', [kind: 'con', path: it]
-				}
-			}
-		}
-	}
-}
+def encoding = { it.encoding = 'UTF-8' }
+tasks.withType(AbstractCompile) each { encoding it.options }
+tasks.withType(GroovyCompile) each { encoding it.groovyOptions }
 
 buildscript {
 	repositories {
@@ -122,12 +94,9 @@ buildscript {
 	}
 }
 
-
-compileBootstrapGroovy.classpath = compileJava.classpath
-
 war {
 	description "make web application archive."
-	def ui = evaluationDependsOn('../koshinuke')
+	def ui = evaluationDependsOn('koshinuke')
 	dependsOn ui.defaultTasks.collect { "$ui.name:$it" } << classes << compileBootstrapGroovy
 	extension 'jar'
 	def webapp = 'src/webapp'
@@ -179,8 +148,8 @@ task tag << {
 	def g = Git.open file('.git')
 	def tag = null
 	try {
-		def msg = "$version-$war.classifier"
-		tag = g.tag() setName msg setMessage "release $msg" call()
+		def n = "$version-$war.classifier"
+		tag = g.tag() setName n setMessage "release $n" call()
 		g.push().setPushTags().setCredentialsProvider new PassphraseProvider() setProgressMonitor new TextProgressMonitor() call()
 	} catch(e) {
 		g.tagDelete().setTags(tag?.tagName).call()
@@ -203,6 +172,31 @@ task uploadArchives(overwrite: true, dependsOn: war) << {
 task release(dependsOn:[build, tag, uploadArchives]) << { println "release fishined !!" }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
+
+eclipse {
+	project { name = 'koshinuke.java' }
+	classpath {
+		containers = [
+			'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
+		]
+		defaultOutputDir = file('bin')
+		file {
+			whenMerged {
+				it.entries.find { it.path == 'src/java' }?.output = 'src/webapp/WEB-INF/classes'
+			}
+			withXml {
+				// for tailing classpath container
+				def n = it.asNode()
+				[
+					'GROOVY_SUPPORT',
+					'GROOVY_DSL_SUPPORT'
+				].each {
+					n.appendNode 'classpathentry', [kind: 'con', path: it]
+				}
+			}
+		}
+	}
+}
 
 task cloneWeb(dependsOn: clean) << {
 	def dir = file("$buildDir/cloneweb/")
@@ -286,7 +280,7 @@ task testrepo {
 task passwd {
 	description = "login.properties Utility."
 	doLast {
-		println "taichi: " + Credential.MD5.digest("taichipass")
-		println "lanius: " + Credential.Crypt.crypt("lanius", "laniuspass")
+		println "taichi: " + org.eclipse.jetty.util.security.Credential.MD5.digest("taichipass")
+		println "lanius: " + org.eclipse.jetty.util.security.Credential.Crypt.crypt("lanius", "laniuspass")
 	}
 }

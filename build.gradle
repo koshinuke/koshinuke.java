@@ -187,10 +187,13 @@ eclipse {
 			withXml {
 				// for tailing classpath container
 				def n = it.asNode()
-				[
+				def gp = [
 					'GROOVY_SUPPORT',
 					'GROOVY_DSL_SUPPORT'
-				].each {
+				]
+				n.children().findAll { gp.contains(it.@path) } each { n.remove(it) }
+
+				gp.each {
 					n.appendNode 'classpathentry', [kind: 'con', path: it]
 				}
 			}

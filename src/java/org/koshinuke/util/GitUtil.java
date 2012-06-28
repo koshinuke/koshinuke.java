@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -58,9 +59,13 @@ public class GitUtil {
 
 	public static <R> R handleClone(String uri, File local, boolean bare,
 			Function<Git, R> fn) {
-		Git g = Git.cloneRepository().setURI(uri).setBare(bare)
-				.setDirectory(local).call();
-		return handle(g, fn);
+		try {
+			Git g = Git.cloneRepository().setURI(uri).setBare(bare)
+					.setDirectory(local).call();
+			return handle(g, fn);
+		} catch (GitAPIException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public static <R> R handle(Repository repo, Function<Repository, R> fn) {

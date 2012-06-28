@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-	compile "org.eclipse.jgit:org.eclipse.jgit:1.+"
+	compile "org.eclipse.jgit:org.eclipse.jgit:2.+"
 	compile 'net.iharder:base64:2.3.8'
 	[
 		'jersey-core',
@@ -87,7 +87,7 @@ buildscript {
 		flatDir { dirs 'lib' }
 	}
 	dependencies {
-		classpath 'org.eclipse.jgit:org.eclipse.jgit:1.+'
+		classpath 'org.eclipse.jgit:org.eclipse.jgit:2.+'
 		classpath ('org.eclipse.jetty:jetty-util:8.+') { exclude group: 'org.eclipse.jetty.orbit' }
 		classpath 'com.google.guava:guava:11.+'
 		classpath 'org.eclipse.mylyn.github:org.eclipse.egit.github.core:1.+'

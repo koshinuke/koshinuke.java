@@ -168,6 +168,8 @@ public class GitDelegate {
 							return _._;
 						}
 					});
+		} catch (GitAPIException e) {
+			throw new IllegalStateException(e);
 		} finally {
 			GitUtil.close(initialized);
 			this.delete(working);
@@ -994,18 +996,22 @@ public class GitDelegate {
 		final WalkingContext context = new WalkingContext(rev);
 		final ObjectId oid = this.findRootObject(repo, context);
 		if (oid != null) {
-			Git g = new Git(repo);
-			BlameResult br = g.blame().setFilePath(context.resource)
-					.setStartCommit(oid).setFollowFileRenames(true).call();
-			RawText rt = br.getResultContents();
-			List<BlameModel> list = new ArrayList<>();
-			for (int i = 0, l = rt.size(); i < l; i++) {
-				RevCommit rc = br.getSourceCommit(i);
-				BlameModel bm = new BlameModel(rc);
-				bm.setContent(rt.getString(i));
-				list.add(bm);
+			try {
+				Git g = new Git(repo);
+				BlameResult br = g.blame().setFilePath(context.resource)
+						.setStartCommit(oid).setFollowFileRenames(true).call();
+				RawText rt = br.getResultContents();
+				List<BlameModel> list = new ArrayList<>();
+				for (int i = 0, l = rt.size(); i < l; i++) {
+					RevCommit rc = br.getSourceCommit(i);
+					BlameModel bm = new BlameModel(rc);
+					bm.setContent(rt.getString(i));
+					list.add(bm);
+				}
+				return list;
+			} catch (GitAPIException e) {
+				throw new IllegalStateException(e);
 			}
-			return list;
 		}
 		return null;
 	}
